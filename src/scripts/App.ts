@@ -74,7 +74,7 @@ class App {
 App satisfies TmpAppType;
 
 // Personal Functions
-const MissingMonoTypes = function (type: PokemonType) {
+const MissingMonoTypes = function (type: PokemonType): PokemonNameType[] {
     return pokemonList.filter(p =>
         p.id > 0 &&
         (p.type[0] == type || p.type[1] == type) &&
@@ -83,7 +83,7 @@ const MissingMonoTypes = function (type: PokemonType) {
     ).map(p => p.name)
 }
 
-const SafariZones = function (region: GameConstants.Region) {
+const SafariZones = function (region: GameConstants.Region): string {
     return SafariItemController.list[region]
         .filter(v => ItemList[v.item.id] instanceof PokemonItem)
         .map(v => PokemonHelper.getPokemonByName(ItemList[v.item.id].name as PokemonNameType))
@@ -93,7 +93,7 @@ const SafariZones = function (region: GameConstants.Region) {
         .join(" <-> ");
 }
 
-const FarmWanderInfo = function () {
+const FarmWanderInfo = function (): string {
     var i;
     var result = [];
     var region = [
@@ -120,7 +120,7 @@ const FarmWanderInfo = function () {
     return JSON.stringify(result);
 }
 
-const EvoItems = function () {
+const EvoItems = function (): string {
     var all = [];
     var underground = [];
     var held_items = [];
@@ -157,7 +157,7 @@ const EvoItems = function () {
     return JSON.stringify(all.map(v => v.name));
 }
 
-const TypedEggInfo = function () {
+const TypedEggInfo = function (): string {
     var x =
         [
             App.game.breeding.hatchList[EggType.Mystery],
@@ -171,7 +171,7 @@ const TypedEggInfo = function () {
     return JSON.stringify(x);
 }
 
-var RemoveEvent = function (req: Requirement) {
+var RemoveEvent = function (req: Requirement): Boolean {
     if ( req instanceof MultiRequirement ) return req.requirements.some(v => RemoveEvent(v));
     if ( req instanceof OneFromManyRequirement ) return req.requirements.every(v => RemoveEvent(v));
     if ( req instanceof SpecialEventRequirement ) return true;
@@ -179,7 +179,7 @@ var RemoveEvent = function (req: Requirement) {
     return false;
 }
 
-const RoutesInfo = function (region: GameConstants.Region) {
+const RoutesInfo = function (region: GameConstants.Region): string {
     var result = Routes.getRoutesByRegion(region).sort((a, b) => a.number - b.number)
     .map(x => [
         x.routeName,
@@ -193,7 +193,7 @@ const RoutesInfo = function (region: GameConstants.Region) {
     return JSON.stringify(result);
 }
 
-const DungeonsInfo = function (region: GameConstants.Region) {
+const DungeonsInfo = function (region: GameConstants.Region): string {
     var result = GameConstants.RegionDungeons[region]
     .map(k => [
         k,
@@ -220,7 +220,7 @@ const DungeonsInfo = function (region: GameConstants.Region) {
     return JSON.stringify(result);
 }
 
-const OrderRequirements = function (req: Requirement, ending: Boolean) {
+const OrderRequirements = function (req: Requirement, ending: Boolean): string {
     var dungeons = GameConstants.RegionDungeons.flat();
     var temp = "";
 
@@ -290,7 +290,7 @@ const OrderRequirements = function (req: Requirement, ending: Boolean) {
     return temp;
 }
 
-const RouteOrder = function (region: GameConstants.Region) {
+const RouteOrder = function (region: GameConstants.Region): string {
     var temp = "";
     Routes.getRoutesByRegion(region).sort(function(a,b){return a.number - b.number}).forEach(w => {
         temp += w.routeName + "|";
@@ -302,7 +302,7 @@ const RouteOrder = function (region: GameConstants.Region) {
     return temp;
 };
 
-const DungeonOrder = function (region: GameConstants.Region) {
+const DungeonOrder = function (region: GameConstants.Region): string {
     var temp = "";
     GameConstants.RegionDungeons[region].forEach(w => {
         temp += w + "|";
@@ -323,7 +323,7 @@ const DungeonOrder = function (region: GameConstants.Region) {
     return temp;
 }
 
-const BadgeOrder = function () {
+const BadgeOrder = function (): string {
     var temp = "";
     GameConstants.RegionGyms.flat().sort(function(a,b){return GymList[a].badgeReward - GymList[b].badgeReward}).forEach(w => {
         temp += BadgeEnums[GymList[w].badgeReward] + " Badge|";
@@ -340,7 +340,7 @@ const BadgeOrder = function () {
     return temp;
 }
 
-const TemporaryBattleOrder = function () {
+const TemporaryBattleOrder = function (): string {
     var temp = "";
     Object.keys(TemporaryBattleList).forEach(w => {
         //console.log(TemporaryBattleList[w].name);
@@ -404,7 +404,7 @@ const UndergoundSellAll = function () {
     }
 }
 
-var HighestOneShot = function () {
+var HighestOneShot = function (): number[] | string {
     DamageCalculator.region(player.region);
     DamageCalculator.weather(Weather.currentWeather());
     var routes = Routes.getRoutesByRegion(player.region)
