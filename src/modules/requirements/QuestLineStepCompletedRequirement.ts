@@ -13,7 +13,7 @@ export default class QuestLineStepCompletedRequirement extends Requirement {
         return this.cachedQuest;
     }
 
-    constructor(private questLineName: QuestLineNameType, private questIndex: (() => number) | number, option = AchievementOption.equal) {
+    constructor(public questLineName: QuestLineNameType, public questIndex: (() => number) | number, option = AchievementOption.equal) {
         super(1, option);
     }
 

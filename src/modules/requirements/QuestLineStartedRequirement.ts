@@ -13,7 +13,7 @@ export default class QuestLineStartedRequirement extends Requirement {
         return this.cachedQuest;
     }
 
-    constructor(private questLineName: QuestLineNameType, option = AchievementOption.equal) {
+    constructor(public questLineName: QuestLineNameType, option = AchievementOption.equal) {
         super(1, option);
     }
 
