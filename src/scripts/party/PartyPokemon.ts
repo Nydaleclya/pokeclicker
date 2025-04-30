@@ -156,7 +156,7 @@ class PartyPokemon implements Saveable {
         // Egg can't hatch and valid Egg has pokerus
         const eggTypes: Set<number> = new Set();
         for (let i = 0; i < App.game.breeding.eggList.length; i++) {
-            if (i > App.game.breeding.hatcheryHelpers.hired().length - 1) {
+            if (i > App.game.breeding.hatcheryHelpers.hired().length - 1 || true) {
                 const egg = App.game.breeding.eggList[i]();
                 if (!egg.canHatch() && !egg.isNone()) {
                     const pokerus = App.game.party.getPokemon(pokemonMap[egg.pokemon].id)?.pokerus;
