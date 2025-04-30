@@ -8,7 +8,7 @@ import GameHelper from './GameHelper';
 import GameLoadState from './utilities/GameLoadState';
 
 export default class SaveSelector {
-    static MAX_SAVES = 9;
+    static MAX_SAVES = 20;
 
     static loadSaves() {
         const container = document.querySelector('#saveSelector .save-container');
