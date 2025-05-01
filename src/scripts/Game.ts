@@ -410,16 +410,16 @@ class Game implements TmpGameType {
             App.game.logbook.filters["ESCAPED"](true);
         }
         const logs = App.game.logbook.filteredLogs();
-        for ( var i = 1; i < logs.length; i++ ) {
-            if ( logs[i].date <= Game.lastLogDate ) break;
+        for ( var i = logs.length - 1; i > 0; i-- ) {
+            if ( logs[i].date <= Game.lastLogDate ) continue;
             if ( logs[i].type.label == "SHINY" ) {
                 var place = logs[i].description().split("]").length > 1 ? logs[i].description().split("]")[0].split("[")[1] : "Check by Hand";
                 var temp = 1;
                 while ( logs[i - temp].type.label != "ESCAPED" && logs[i - temp].type.label != "CAUGHT" && temp < i ) temp++;
                 console.log(place + " - " + logs[i - temp].description() + " - " + new Date(logs[i - temp].date));
+                Game.lastLogDate = new Date(logs[i - temp].date).getTime();
             }
         }
-        Game.lastLogDate = Date.now();
     }
 
     gameTick() {

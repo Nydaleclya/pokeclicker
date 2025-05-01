@@ -397,9 +397,9 @@ class FarmHands {
 }
 
 // Personal Farm Hands Start
-FarmHands.add(new FarmHand('Starf', 100, 50, FarmHandSpeeds.UltraFast, 10, -25, new BerriesUnlockedRequirement(56)));
-FarmHands.add(new FarmHand('Lum', 100, 50, FarmHandSpeeds.UltraFast, 10, -25, new BerriesUnlockedRequirement(56)));
-FarmHands.add(new FarmHand('Chople', 100, 50, FarmHandSpeeds.UltraFast, 10, -25, new BerriesUnlockedRequirement(56)));
+FarmHands.add(new FarmHand('Starf', 100, 50, FarmHandSpeeds.UltraFast, 10, -12, new BerriesUnlockedRequirement(56)));
+FarmHands.add(new FarmHand('Lum', 100, 50, FarmHandSpeeds.UltraFast, 10, -12, new BerriesUnlockedRequirement(56)));
+FarmHands.add(new FarmHand('Chople', 100, 50, FarmHandSpeeds.UltraFast, 10, -12, new BerriesUnlockedRequirement(56)));
 // Personal Farm Hands End
 
 // Note: Gender-neutral names used as the trainer sprite is (seeded) randomly generated
