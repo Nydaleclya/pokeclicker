@@ -239,7 +239,7 @@ export class UndergroundHelper {
     }
 
     get canGenerateSpecial(): boolean {
-        return false;
+        return true;
     }
 
     get timeSinceWork(): number {
