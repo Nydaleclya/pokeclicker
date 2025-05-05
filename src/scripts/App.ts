@@ -171,7 +171,7 @@ const TypedEggInfo = function (): string {
     return JSON.stringify(x);
 }
 
-var RemoveEvent = function (req: Requirement): Boolean {
+const RemoveEvent = function (req: Requirement): Boolean {
     if ( req instanceof MultiRequirement ) return req.requirements.some(v => RemoveEvent(v));
     if ( req instanceof OneFromManyRequirement ) return req.requirements.every(v => RemoveEvent(v));
     if ( req instanceof SpecialEventRequirement ) return true;
@@ -404,7 +404,7 @@ const UndergoundSellAll = function () {
     }
 }
 
-var HighestOneShot = function (): number[] | string {
+const HighestOneShot = function (): number[] | string {
     DamageCalculator.region(player.region);
     DamageCalculator.weather(Weather.currentWeather());
     var routes = Routes.getRoutesByRegion(player.region)
