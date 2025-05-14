@@ -404,7 +404,7 @@ const UndergoundSellAll = function () {
     }
 }
 
-const HighestOneShot = function (): number[] | string {
+const HighestOneShot = function (): string {
     DamageCalculator.region(player.region);
     DamageCalculator.weather(Weather.currentWeather());
     var routes = Routes.getRoutesByRegion(player.region)
@@ -420,4 +420,22 @@ const HighestOneShot = function (): number[] | string {
         .every(Boolean) ? Routes.normalizedNumber(player.region, v.number, false) : -1);
 
     return routes.length > 0 ? Routes.getName(Routes.unnormalizeRoute(Math.max(...routes)), player.region) : "No One Shot";
+}
+
+const HowLikelyShinyCatch = function (type: string): string {
+    var out = []
+
+    if ( type == "R" ) {
+        out.push(...RouteHelper.getAvailablePokemonList(player.route, player.region, true));
+    }
+    if ( type == "D" ) {
+        out.push(...player.town.dungeon.allAvailablePokemon());          
+    }
+
+    out = out.map(v => PokemonHelper.getPokemonByName(v).id)
+            .filter(v => !App.game.party.alreadyCaughtPokemon(v, true))
+            .map(v => [v, PokemonFactory.catchRateHelper(pokemonMap[v].catchRate, true), App.game.statistics.shinyPokemonEncountered[v]()])
+            .map(v => PokemonHelper.getPokemonById(v[0]).name + ": " + ((1 - Math.pow((100 - (v[1] + 10)) / 100, v[2])) * 100).toFixed(2) + "%");
+    
+    return out.join("\n");
 }
