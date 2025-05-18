@@ -439,3 +439,7 @@ const HowLikelyShinyCatch = function (type: string): string {
     
     return out.join("\n");
 }
+
+const HowManyDungeonRuns = function (): number {
+    return Math.floor(App.game.wallet.currencies[GameConstants.Currency.dungeonToken]() / player.town.dungeon.tokenCost);
+}
