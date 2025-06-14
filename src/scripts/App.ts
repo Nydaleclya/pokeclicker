@@ -300,7 +300,7 @@ const RouteOrder = function (region: GameConstants.Region): string {
         temp += "<<";
     });
     return temp;
-};
+}
 
 const DungeonOrder = function (region: GameConstants.Region): string {
     var temp = "";
