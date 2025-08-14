@@ -11,6 +11,7 @@
 class Game implements TmpGameType {
     frameRequest;
     public static achievementCounter = 0;
+    public static loggingCounter = 0;
     public static lastLogDate = 0;
     private _gameState: KnockoutObservable<GameConstants.GameState>;
     private worker: Worker;
@@ -428,6 +429,13 @@ class Game implements TmpGameType {
             Game.achievementCounter = 0;
             AchievementHandler.checkAchievements();
             GameHelper.incrementObservable(App.game.statistics.secondsPlayed);
+        }
+
+        // Log Shinys
+        Game.loggingCounter += GameConstants.TICK_TIME;
+        if (Game.loggingCounter >= 10 * GameConstants.SECOND) {
+            Game.loggingCounter = 0;
+            this.logging();
         }
 
         // Battles
