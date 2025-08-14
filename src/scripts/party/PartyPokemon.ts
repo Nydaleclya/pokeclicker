@@ -342,10 +342,11 @@ class PartyPokemon implements Saveable, TmpPartyPokemonType {
     }
 
     public setVitaminAmount(vitamin: GameConstants.VitaminType, amount: number) {
-        if (this.breeding || isNaN(amount) || amount < 0) {
+        if (this.breeding || isNaN(amount)) {
             return;
         }
 
+        amount = Math.max(0, amount);
         const diff = Math.floor(amount) - this.vitaminsUsed[vitamin]();
         if (diff === 0) {
             return;
@@ -460,10 +461,7 @@ class PartyPokemon implements Saveable, TmpPartyPokemonType {
         // Check if search matches englishName or displayName
         const nameFilterSetting = Settings.getSetting('breedingNameFilter') as SearchSetting;
         if (nameFilterSetting.observableValue() != '') {
-            const nameFilter = nameFilterSetting.regex();
-            const displayName = PokemonHelper.displayName(this.name)();
-            const partyName = this.displayName;
-            if (!nameFilter.test(displayName) && !nameFilter.test(this.name) && !(partyName != undefined && nameFilter.test(partyName))) {
+            if (!PokemonHelper.matchPokemonByNames(nameFilterSetting.regex(), this.name, this)) {
                 return false;
             }
         }
