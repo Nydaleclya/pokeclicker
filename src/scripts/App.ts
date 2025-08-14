@@ -160,13 +160,13 @@ const EvoItems = function (): string {
 const TypedEggInfo = function (): string {
     var x =
         [
-            App.game.breeding.hatchList[EggType.Mystery],
-            App.game.breeding.hatchList[EggType.Fire],
-            App.game.breeding.hatchList[EggType.Water],
-            App.game.breeding.hatchList[EggType.Grass],
-            App.game.breeding.hatchList[EggType.Fighting],
-            App.game.breeding.hatchList[EggType.Electric],
-            App.game.breeding.hatchList[EggType.Dragon]
+            App.game.breeding.hatchList[GameConstants.EggItemType.Mystery_egg],
+            App.game.breeding.hatchList[GameConstants.EggItemType.Fire_egg],
+            App.game.breeding.hatchList[GameConstants.EggItemType.Water_egg],
+            App.game.breeding.hatchList[GameConstants.EggItemType.Grass_egg],
+            App.game.breeding.hatchList[GameConstants.EggItemType.Fighting_egg],
+            App.game.breeding.hatchList[GameConstants.EggItemType.Electric_egg],
+            App.game.breeding.hatchList[GameConstants.EggItemType.Dragon_egg]
         ].map(x => x.map(v => v.map(w => PokemonHelper.displayName(w)())))
     return JSON.stringify(x);
 }
