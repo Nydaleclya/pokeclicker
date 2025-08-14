@@ -36,6 +36,7 @@ class HatcheryHelper {
     public nextBonus: KnockoutObservable<number> = ko.observable(1).extend({ numeric: 0 });
     public categories: KnockoutObservableArray<number> = ko.observableArray([]);
     public useHatcheryFilters: KnockoutObservable<boolean> = ko.observable(true);
+    public realCost: KnockoutObservable<number> = ko.observable(0).extend({ numeric: 0 });;
     // public level: number;
     // public experience: number;
 
@@ -48,9 +49,10 @@ class HatcheryHelper {
     ) {
         SeededRand.seed(parseInt(this.name, 36));
         this.trainerSprite = SeededRand.intBetween(0, 118);
+        this.realCost(this.cost.amount * (1 - (this.hatchBonus() / 50)))
 
         this.tooltip = ko.pureComputed(() => `<strong>${this.name}</strong><br/>
-            Cost: <img src="assets/images/currency/${GameConstants.Currency[this.cost.currency]}.svg" width="20px">&nbsp;${(this.cost.amount).toLocaleString('en-US')}/hatch<br/>
+            Cost: <img src="assets/images/currency/${GameConstants.Currency[this.cost.currency]}.svg" width="20px">&nbsp;${(this.realCost()).toLocaleString('en-US')}/hatch<br/>
             Step Efficiency: ${this.stepEfficiency()}%<br/>
             Attack Efficiency: ${this.attackEfficiency()}%<br/>
             Hatched: ${this.hatched().toLocaleString('en-US')}<br/>`
@@ -72,6 +74,7 @@ class HatcheryHelper {
         this.attackEfficiency(this.attackEfficiencyBase + this.hatchBonus());
         this.prevBonus(HatcheryHelperMinBonusMap[this.hatchBonus()] || 0);
         this.nextBonus(HatcheryHelperMinBonusMap[((this.hatchBonus() * 10) + 1) / 10] || 1);
+        this.realCost(this.cost.amount * (1 - (this.hatchBonus() / 50)));
     }
 
     isUnlocked(): boolean {
@@ -91,10 +94,10 @@ class HatcheryHelper {
     hire(): void {
 
         // Check the player has enough Currency to hire this Hatchery Helper
-        if (!App.game.wallet.hasAmount(this.cost)) {
+        if (!App.game.wallet.hasAmount(new Amount(this.realCost(), this.cost.currency))) {
             Notifier.notify({
                 title: `[HATCHERY HELPER] <img src="assets/images/profile/trainer-${this.trainerSprite}.png" height="24px" class="pixelated"/> ${this.name}`,
-                message: `You don't have enough ${this.currencyString()} to hire me...\nCost: <img src="./assets/images/currency/${GameConstants.Currency[this.cost.currency]}.svg" height="24px"/> ${this.cost.amount.toLocaleString('en-US')}`,
+                message: `You don't have enough ${this.currencyString()} to hire me...\nCost: <img src="./assets/images/currency/${GameConstants.Currency[this.cost.currency]}.svg" height="24px"/> ${this.realCost().toLocaleString('en-US')}`,
                 type: NotificationConstants.NotificationOption.warning,
                 timeout: 30 * GameConstants.SECOND,
             });
@@ -125,10 +128,10 @@ class HatcheryHelper {
 
     charge(): void {
         // Charge the player if they can afford it, otherwise notify that they cannot
-        if (!App.game.wallet.loseAmount(this.cost)) {
+        if (!App.game.wallet.loseAmount(new Amount(this.realCost(), this.cost.currency))) {
             Notifier.notify({
                 title: `[HATCHERY HELPER] <img src="assets/images/profile/trainer-${this.trainerSprite}.png" height="24px" class="pixelated"/> ${this.name}`,
-                message: `It looks like you are a little short on ${this.currencyString()} right now...\nLet me know when you're hiring again!\nCost: <img src="./assets/images/currency/${GameConstants.Currency[this.cost.currency]}.svg" height="24px"/> ${this.cost.amount.toLocaleString('en-US')}`,
+                message: `It looks like you are a little short on ${this.currencyString()} right now...\nLet me know when you're hiring again!\nCost: <img src="./assets/images/currency/${GameConstants.Currency[this.cost.currency]}.svg" height="24px"/> ${this.realCost().toLocaleString('en-US')}`,
                 type: NotificationConstants.NotificationOption.danger,
                 timeout: 30 * GameConstants.MINUTE,
             });
@@ -176,7 +179,7 @@ class HatcheryHelpers {
         this.list.push(helper);
     }
 
-    public MAX_HIRES = 3;
+    public MAX_HIRES = 4;
     public available: KnockoutComputed<HatcheryHelper[]>;
     public hired: KnockoutComputed<HatcheryHelper[]>;
     public canHire: KnockoutComputed<boolean>;

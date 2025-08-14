@@ -511,7 +511,9 @@ aria-labelledby="breedingModalLabel" aria-hidden="true">
                                         <tbody>
                                             <tr>
                                                 <td class="text-left align-middle">Cost / Hatch:</td>
-                                                <td class="text-right" data-bind="template: { name: 'currencyTemplate', data: {'amount': $data.cost.amount, 'currency': $data.cost.currency, 'reducedThreshold': 1e10}}"></td>
+                                                <td class="text-right">
+                                                    <knockout data-bind="template: { name: 'currencyTemplate', data: {'amount': $data.realCost(), 'currency': $data.cost.currency, 'reducedThreshold': 1e10}}"></knockout>
+                                                </td>
                                             </tr>
                                             <tr>
                                                 <td class="text-left">Step Efficiency:</td>

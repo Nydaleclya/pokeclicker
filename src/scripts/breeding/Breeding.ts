@@ -218,17 +218,17 @@ class Breeding implements Feature {
         let emptySlots = 0;
         while (index-- > 0) {
             const helper = this.hatcheryHelpers.hired()[index];
-            if (helper) {
-                continue;
-            }
             const egg = this.eggList[index]();
-            if (egg.isNone() && index + 1 <= this._eggSlots()) {
-                emptySlots++;
-                continue;
-            }
             const partyPokemon = egg.partyPokemon();
             if (!egg.isNone() && partyPokemon && partyPokemon.canCatchPokerus() && partyPokemon.pokerus == GameConstants.Pokerus.Uninfected) {
                 partyPokemon.calculatePokerus(index);
+            }
+            if (helper) {
+                continue;
+            }
+            if (egg.isNone() && index + 1 <= this._eggSlots()) {
+                emptySlots++;
+                continue;
             }
             egg.addSteps(amount, this.multiplier);
             if (this._queueList().length && egg.canHatch()) {
@@ -583,7 +583,7 @@ class Breeding implements Feature {
     public fireAllButtonTooltip(): string {
         let str = '';
         this.hatcheryHelpers.hired().forEach(x => {
-            str += `<img src="assets/images/profile/trainer-${x.trainerSprite}.png" width="20px">&nbsp; ${x.name} <img src="assets/images/currency/${GameConstants.Currency[x.cost.currency]}.svg" width="20px">&nbsp;${(x.cost.amount).toLocaleString('en-US')} <br/>`;
+            str += `<img src="assets/images/profile/trainer-${x.trainerSprite}.png" width="20px">&nbsp; ${x.name} <img src="assets/images/currency/${GameConstants.Currency[x.cost.currency]}.svg" width="20px">&nbsp;${(x.realCost()).toLocaleString('en-US')} <br/>`;
         });
         return str;
     }

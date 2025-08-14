@@ -6,7 +6,7 @@ class App {
 
     static readonly debug = false;
     static game: Game;
-    static readonly isUsingClient = typeof navigator === 'object' && typeof navigator.userAgent === 'string' && navigator.userAgent.indexOf('Electron') >= 0;
+    static readonly isUsingClient = true || (typeof navigator === 'object' && typeof navigator.userAgent === 'string' && navigator.userAgent.indexOf('Electron') >= 0);
     static translation = new Translate(Settings.getSetting('translation.language'));
 
     static start() {
@@ -72,3 +72,374 @@ class App {
 }
 
 App satisfies TmpAppType;
+
+// Personal Functions
+const MissingMonoTypes = function (type: PokemonType): PokemonNameType[] {
+    return pokemonList.filter(p =>
+        p.id > 0 &&
+        (p.type[0] == type || p.type[1] == type) &&
+        PokemonHelper.calcNativeRegion(p.name) <= player.highestRegion() &&
+        PartyController.getCaughtStatusByName(p.name) == CaughtStatus.NotCaught
+    ).map(p => p.name)
+}
+
+const SafariZones = function (region: GameConstants.Region): string {
+    return SafariItemController.list[region]
+        .filter(v => ItemList[v.item.id] instanceof PokemonItem)
+        .map(v => PokemonHelper.getPokemonByName(ItemList[v.item.id].name as PokemonNameType))
+        .filter(v => v.id != 0).map(v => PokemonHelper.displayName(v.name)())
+        .concat(SafariPokemonList.list[region]().filter(v => !(v.requirement instanceof ObtainedPokemonRequirement))
+        .map(v => PokemonHelper.displayName(v.name)()))
+        .join(" <-> ");
+}
+
+const FarmWanderInfo = function (): string {
+    var i;
+    var result = [];
+    var region = [
+        /*Kanto*/ [],
+        /*Jotho*/ [BerryType.Chople, BerryType.Kebia, BerryType.Shuca, BerryType.Charti, BerryType.Babiri, BerryType.Chilan, BerryType.Petaya], // #5484 -> []
+        /*Hoenn*/ [BerryType.Pinkan, BerryType.Kee, BerryType.Maranga, BerryType.Liechi, BerryType.Ganlon, BerryType.Salac, BerryType.Enigma], // #5484 -> [BerryType.Pinkan, BerryType.Enigma]
+        /*Sinnoh*/ [BerryType.Apicot, BerryType.Lansat, BerryType.Snover], //#5484 -> [BerryType.Snover]
+        /*Unova*/ [],
+        /*Kalos*/ [],
+        /*Alola*/ [],
+        /*Galar*/ [],
+        /*Hisui*/ [BerryType.Hopo],
+        /*Paldea*/ [],
+    ];
+
+    App.game.farming.berryData.forEach(v => !region.flat().includes(v.type) ? region[0].push(v.type) : null);
+    region.forEach(() => result.push([]));
+             
+    var temp = App.game.farming.berryData.flatMap(v => v.wander.map(w => [w, region.flatMap((a, b) => a.includes(v.type) ? b : -1).filter(i => i >= 0)[0]]));
+    [...new Set(temp.map(v => v[0] as PokemonNameType))]
+        .map(v => [v, pokemonList.find(w => w.name === v).id, Math.max(Math.min(...temp.map(w => w[0] === v ? w[1] as number : -1).filter(j => j >= 0)), PokemonHelper. calcNativeRegion(pokemonList.find(w => w.name === v).name))])
+        .sort(function(a, b){return (a[1] as number) - (b[1] as number)})
+        .forEach(v => result[v[2]].push(PokemonHelper.displayName(v[0] as PokemonNameType)()));
+    return JSON.stringify(result);
+}
+
+const EvoItems = function (): string {
+    var all = [];
+    var underground = [];
+    var held_items = [];
+    Object.keys(ItemList).forEach(v => {
+        if ( ItemList[v] instanceof EvolutionStone ) all.push(ItemList[v]);
+    });
+    UndergroundItems.list.forEach(v => {
+        if ( v.valueType === UndergroundItemValueType.EvolutionItem ) underground.push(v);
+    });
+    pokemonList.forEach(v => {
+        if ( v.hasOwnProperty("heldItem") ) {
+            if ( PokemonHelper.getPokemonByName(v.name).heldItem.type === ItemType.item ) {
+                held_items.push(PokemonHelper.getPokemonByName(v.name).heldItem);
+            }
+        }
+    });
+    held_items = [...new Set(held_items.map(v => v.id))];
+    underground.forEach(v => {
+        all = all.map(w => {
+            if ( !(w instanceof EvolutionStone) ) return "";
+            if ( w.name.toLowerCase() === (v.name).replace(" ","_").toLowerCase() ) return "";
+            return w;
+        });
+    });
+    held_items.forEach(v => {
+        all = all.map(w => {
+            if ( !(w instanceof EvolutionStone) ) return "";
+            if ( w.name.toLowerCase() === v.toLowerCase() ) return "";
+            return w;
+        });
+    });
+    all = all.filter(Boolean);
+
+    return JSON.stringify(all.map(v => v.name));
+}
+
+const TypedEggInfo = function (): string {
+    var x =
+        [
+            App.game.breeding.hatchList[EggType.Mystery],
+            App.game.breeding.hatchList[EggType.Fire],
+            App.game.breeding.hatchList[EggType.Water],
+            App.game.breeding.hatchList[EggType.Grass],
+            App.game.breeding.hatchList[EggType.Fighting],
+            App.game.breeding.hatchList[EggType.Electric],
+            App.game.breeding.hatchList[EggType.Dragon]
+        ].map(x => x.map(v => v.map(w => PokemonHelper.displayName(w)())))
+    return JSON.stringify(x);
+}
+
+const RemoveEvent = function (req: Requirement): Boolean {
+    if ( req instanceof MultiRequirement ) return req.requirements.some(v => RemoveEvent(v));
+    if ( req instanceof OneFromManyRequirement ) return req.requirements.every(v => RemoveEvent(v));
+    if ( req instanceof SpecialEventRequirement ) return true;
+    if ( req instanceof PokemonLevelRequirement && req.option == GameConstants.AchievementOption.less ) return true;
+    return false;
+}
+
+const RoutesInfo = function (region: GameConstants.Region): string {
+    var result = Routes.getRoutesByRegion(region).sort((a, b) => a.number - b.number)
+    .map(x => [
+        x.routeName,
+        x.pokemon.land.concat(x.pokemon.water, x.pokemon.headbutt, ...x.pokemon.special.map(p => (!RemoveEvent(p.req) ? p.pokemon : []) ) ).map(v => PokemonHelper.displayName(v)())
+    ]);
+    Routes.getRoutesByRegion(region).forEach(v => {
+        v.pokemon.special.forEach(w => {
+            if ( !(w.req instanceof WeatherRequirement) && !(w.req instanceof SpecialEventRequirement) && !(w.req instanceof MoonCyclePhaseRequirement) ) console.log(v.routeName + " - " + w.pokemon);
+        });
+    });
+    return JSON.stringify(result);
+}
+
+const DungeonsInfo = function (region: GameConstants.Region): string {
+    var result = GameConstants.RegionDungeons[region]
+    .map(k => [
+        k,
+        [].concat(  ...dungeonList[k].enemyList.filter(v => typeof v === 'string'),
+                    ...dungeonList[k].enemyList.filter(v => !(typeof v === 'string') && !(v instanceof DungeonTrainer)).map(v => v as DetailedPokemon).map(v => !RemoveEvent(v.options?.requirement) ? v.pokemon : []),
+                    ...dungeonList[k].bossList.filter(v => !(v instanceof DungeonTrainer)).map(v => !RemoveEvent(v.options?.requirement) ? v.name : [])
+                 ).map(v => PokemonHelper.displayName(v)()),
+        [].concat(...[].concat(...Object.entries(dungeonList[k].lootTable).map(([_, v]) => v).flat().map(v => pokemonMap[v.loot].name != 'MissingNo.' ? v : [])).map(v => !RemoveEvent(v.requirement) ? v.loot : []))
+    ]);
+    GameConstants.RegionDungeons[region].forEach(w => {
+        dungeonList[w].bossList.forEach(v => {
+            if ( v instanceof DungeonBossPokemon && PokemonHelper.calcNativeRegion(v.name) === region ) {
+                if ( v.options ) console.log(w + " - " + "Boss: " + v.name);
+            }
+        });
+        dungeonList[w].enemyList.forEach(v => {
+            if ( !(typeof v === 'string') && !(v instanceof DungeonTrainer) && PokemonHelper.calcNativeRegion(v.pokemon) === region ) {
+                if ( v.options ) {
+                    if ( v.options.requirement ) console.log(w + " - " + "Enemy: " + v.pokemon);
+                }
+            }
+        });
+    });
+    return JSON.stringify(result);
+}
+
+const OrderRequirements = function (req: Requirement, ending: Boolean): string {
+    var dungeons = GameConstants.RegionDungeons.flat();
+    var temp = "";
+
+    if ( req.option === GameConstants.AchievementOption.less ) {
+        console.log(req);
+        if ( req instanceof GymBadgeRequirement ||
+             req instanceof QuestLineStepCompletedRequirement ||
+             req instanceof TemporaryBattleRequirement ) {
+            return temp;
+        }
+    }
+
+    if ( req instanceof RouteKillRequirement ) temp += Routes.getRoute(req.region, req.route).routeName;
+    else if ( req instanceof GymBadgeRequirement ) temp += BadgeEnums[req.badge] + " Badge";
+    else if ( req instanceof ClearDungeonRequirement ) temp += dungeons[req.dungeonIndex];
+    else if ( req instanceof TemporaryBattleRequirement ) temp += req.battleName;
+
+    else if ( req instanceof QuestLineStepCompletedRequirement ) temp += "[Q] " + req.questLineName + " Step " + req.questIndex;
+    else if ( req instanceof QuestLineStartedRequirement ) temp += "[Q] " + req.questLineName + " START";
+    else if ( req instanceof QuestLineCompletedRequirement ) temp += "[Q] " + req.questLineName + " END";
+
+    else if ( req instanceof SpecialEventRequirement ) temp += "Event Calendar";
+
+    else if ( req instanceof MultiRequirement ) {
+        temp += "(";
+        req.requirements.forEach((v, i) => {
+            temp += OrderRequirements(v, false);
+            if ( i + 1 < req.requirements.length ) temp += " AND ";
+        });
+        temp += ")";
+    }
+    else if ( req instanceof OneFromManyRequirement ) {
+        temp += "(";
+        req.requirements.forEach((v, i) => {
+            temp += OrderRequirements(v, false);
+            if ( i + 1 < req.requirements.length ) temp += " OR ";
+        });
+        temp += ")";
+    }
+    else if ( req instanceof CustomRequirement ) {
+        console.log("CustomRequirement");
+        console.log(req);
+        console.log("----------");
+    }
+    // These Requirements is only on stuff not yet intended to play with
+    else if ( req instanceof NullRequirement ) temp += "NULL";
+    else if ( req instanceof DevelopmentRequirement ) {
+        if ( req.requirement ) temp += OrderRequirements(req.requirement, true);
+        temp += "NULL";
+    }
+    // These Requirements are location independent and thus not needed to include.
+    else if ( req instanceof WeatherRequirement ||
+              req instanceof SeededDateSelectNRequirement ||
+              req instanceof StatisticRequirement ||
+              req instanceof DayCyclePartRequirement ||
+              req instanceof ItemOwnedRequirement ||
+              req instanceof ObtainedPokemonRequirement ||
+              req instanceof ClearGymRequirement ) {}
+    else {
+        console.log("Requirement not included");
+        console.log(req);
+        console.log("----------");
+    }
+
+
+    if ( ending ) temp += "|";
+    return temp;
+}
+
+const RouteOrder = function (region: GameConstants.Region): string {
+    var temp = "";
+    Routes.getRoutesByRegion(region).sort(function(a,b){return a.number - b.number}).forEach(w => {
+        temp += w.routeName + "|";
+        w.requirements.forEach(v => {
+            temp += OrderRequirements(v, true);
+        });
+        temp += "<<";
+    });
+    return temp;
+}
+
+const DungeonOrder = function (region: GameConstants.Region): string {
+    var temp = "";
+    GameConstants.RegionDungeons[region].forEach(w => {
+        temp += w + "|";
+        if ( TownList[w].dungeon.optionalParameters?.requirement ) {
+            temp += OrderRequirements(TownList[w].dungeon.optionalParameters?.requirement, true);
+        }
+        TownList[w].requirements.forEach(v => {
+            temp += OrderRequirements(v, true);
+        });
+        var rew = String(TownList[w].dungeon.rewardFunction);
+        if ( rew != "() => { }" ) {
+            if ( rew.search("DungeonGainGymBadge") >= 0 ) {
+                temp += eval("BadgeEnums[" + rew.substring(rew.search("GymList")).replace(")",".badgeReward") + "]") + " Badge|";
+            }
+        }
+        temp += "<<";
+    });
+    return temp;
+}
+
+const BadgeOrder = function (): string {
+    var temp = "";
+    GameConstants.RegionGyms.flat().sort(function(a,b){return GymList[a].badgeReward - GymList[b].badgeReward}).forEach(w => {
+        temp += BadgeEnums[GymList[w].badgeReward] + " Badge|";
+        GymList[w].requirements.forEach(v => {
+            temp += OrderRequirements(v, true);
+        });
+        if ( GymList[w].hasOwnProperty("parent") ) {
+            GymList[w].parent.requirements.forEach(v => {
+                temp += OrderRequirements(v, true);
+            });
+        }
+        temp += "<<";
+    });
+    return temp;
+}
+
+const TemporaryBattleOrder = function (): string {
+    var temp = "";
+    Object.keys(TemporaryBattleList).forEach(w => {
+        //console.log(TemporaryBattleList[w].name);
+        temp += TemporaryBattleList[w].name + "|";
+        TemporaryBattleList[w].requirements.forEach(v => {
+            temp += OrderRequirements(v, true);
+        });
+        TemporaryBattleList[w].parent?.requirements.forEach(v => {
+            temp += OrderRequirements(v, true);
+        });
+        temp += "<<";
+    });
+    return temp;
+}
+
+const RouteAchieves = function () {
+    var cooldown = 1000;
+    var highest = Math.max(...Routes.getRoutesByRegion(player.region).map(v => v.orderNumber));
+    if (
+        App.game.statistics.routeKills[player.region][player.route]() >= Math.max(...GameConstants.ACHIEVEMENT_DEFEAT_ROUTE_VALUES) &&
+        GameConstants.Pokerus.Resistant === RouteHelper.minPokerus(RouteHelper.getAvailablePokemonList(player.route, player.region, true).filter(w => App.game.party.caughtPokemon.filter(v => v.name === w)[0].pokerus != GameConstants.Pokerus.Uninfected)) &&
+        highest === Routes.getRoute(player.region, player.route).orderNumber
+    ) {
+        console.log("STOP - Route Achieves Finished");
+        return;
+    }
+    if (
+        App.game.statistics.routeKills[player.region][player.route]() >= Math.max(...GameConstants.ACHIEVEMENT_DEFEAT_ROUTE_VALUES) &&
+        GameConstants.Pokerus.Resistant === RouteHelper.minPokerus(RouteHelper.getAvailablePokemonList(player.route, player.region, true).filter(w => App.game.party.caughtPokemon.filter(v => v.name === w)[0].pokerus != GameConstants.Pokerus.Uninfected)) &&
+        highest != Routes.getRoute(player.region, player.route).orderNumber
+    ) {
+        MapHelper.moveToRoute(Routes.unnormalizeRoute(Routes.normalizedNumber(player.region, player.route, false) + 1), player.region);
+    }
+    setTimeout(function (){RouteAchieves()}, cooldown);
+    return;
+}
+
+const TemporaryBattleBot = function (battle: TemporaryBattle) {
+    var cooldown = 100;
+    if ( battle === undefined ) return;
+    if ( TemporaryBattleList[battle.name] === undefined ) return;
+    if ( TemporaryBattleRunner.running() ) {
+        setTimeout(function (){TemporaryBattleBot(battle)}, cooldown);
+        return;
+    }
+    if ( battle.completeRequirements.every(v => v.isCompleted()) ) {
+        console.log("STOP - TemporaryBattleBot");
+        return;
+    }
+    TemporaryBattleRunner.startBattle(battle);
+    setTimeout(function (){TemporaryBattleBot(battle)}, cooldown);
+    return;
+}
+
+const UndergoundSellAll = function () {
+    var items = [...new Set(Object.values(UndergroundItems.list).map(i => i.name))];
+    for ( var i = 0; i < items.length; i++ ) {
+        if ( UndergroundItems.getByName(items[i]).valueType == UndergroundItemValueType.Diamond ) {
+            UndergroundController.sellMineItem(UndergroundItems.getByName(items[i]), player.itemList[UndergroundItems.getByName(items[i]).itemName]())
+        }
+    }
+}
+
+const HighestOneShot = function (): string {
+    DamageCalculator.region(player.region);
+    DamageCalculator.weather(Weather.currentWeather());
+    var routes = Routes.getRoutesByRegion(player.region)
+        .map(v => RouteHelper.getAvailablePokemonList(v.number, player.region)
+            .map((w, i, arr) => {
+                var temp_h = PokemonFactory.routeHealth(v.number, player.region);
+                var avg = arr.map(p => pokemonMap[p].base.hitpoints).reduce((acc, q, j) => (acc + (q - acc) / (j + 1)), 0);
+                var health = Math.round((temp_h - temp_h / 10) + (temp_h / 10 / avg * PokemonHelper.getPokemonByName(w).hitpoints));
+                DamageCalculator.type1(PokemonHelper.getPokemonByName(w).type1);
+                DamageCalculator.type2(PokemonHelper.getPokemonByName(w).type2);
+                return DamageCalculator.totalDamage() >= health;
+            })
+        .every(Boolean) ? Routes.normalizedNumber(player.region, v.number, false) : -1);
+
+    return routes.length > 0 ? Routes.getName(Routes.unnormalizeRoute(Math.max(...routes)), player.region) : "No One Shot";
+}
+
+const HowLikelyShinyCatch = function (type: string): string {
+    var out = []
+
+    if ( type == "R" ) {
+        out.push(...RouteHelper.getAvailablePokemonList(player.route, player.region, true));
+    }
+    if ( type == "D" ) {
+        out.push(...player.town.dungeon.allAvailablePokemon());          
+    }
+
+    out = out.map(v => PokemonHelper.getPokemonByName(v).id)
+            .filter(v => !App.game.party.alreadyCaughtPokemon(v, true))
+            .map(v => [v, PokemonFactory.catchRateHelper(pokemonMap[v].catchRate, true), App.game.statistics.shinyPokemonEncountered[v]()])
+            .map(v => PokemonHelper.getPokemonById(v[0]).name + ": " + ((1 - Math.pow((100 - (v[1] + 10)) / 100, v[2])) * 100).toFixed(2) + "%");
+    
+    return out.join("\n");
+}
+
+const HowManyDungeonRuns = function (): number {
+    return Math.floor(App.game.wallet.currencies[GameConstants.Currency.dungeonToken]() / player.town.dungeon.tokenCost);
+}
