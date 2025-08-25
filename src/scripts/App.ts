@@ -477,3 +477,14 @@ const BattleFrontierTypeDistro = function (): string {
     }
     return JSON.stringify(types);
 }
+
+const BattleFrontierBot = function () {
+    var cooldown = 1000;
+    if ( BattleFrontierRunner.started() ) {
+        setTimeout(function (){BattleFrontierBot()}, cooldown);
+        return;
+    }
+    BattleFrontierRunner.start(true);
+    setTimeout(function (){BattleFrontierBot()}, cooldown);
+    return;
+}
