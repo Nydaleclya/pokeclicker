@@ -128,6 +128,7 @@ class HatcheryHelper {
 
     charge(): void {
         // Charge the player if they can afford it, otherwise notify that they cannot
+        if ( this.realCost() === 0 ) return;
         if (!App.game.wallet.loseAmount(new Amount(this.realCost(), this.cost.currency))) {
             Notifier.notify({
                 title: `[HATCHERY HELPER] <img src="assets/images/profile/trainer-${this.trainerSprite}.png" height="24px" class="pixelated"/> ${this.name}`,
