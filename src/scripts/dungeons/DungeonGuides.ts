@@ -225,58 +225,6 @@ class DungeonGuides {
     }
 }
 
-// Personal Guides Start
-DungeonGuides.add(new DungeonGuide('Boss', 'Knows the shortest path to the boss!', [], [], 100,
-    () => {
-        // Get current position
-        const pos = DungeonRunner.map.playerPosition();
-        const nearbyTiles = DungeonRunner.map.nearbyTiles(pos);
-
-        const bossPosition = DungeonRunner.map.board()[pos.floor].flat().find(t => t.type() == GameConstants.DungeonTileType.boss)?.position;
-        const ladderPosition = DungeonRunner.map.board()[pos.floor].flat().find(t => t.type() == GameConstants.DungeonTileType.ladder)?.position;
-    
-        const path = bossPosition || ladderPosition ? DungeonRunner.map.findShortestPath(pos, bossPosition || ladderPosition) : [];
-    
-        if (path?.length) {
-            // We found the boss or a ladder, move to it
-            DungeonRunner.map.moveToTile(path[0]);
-            return;
-        }
-    
-        // We didn't find what we were looking for, We just want to move weighted randomly
-        const randomTile = DungeonGuides.getRandomWeightedNearbyTile(nearbyTiles);
-        DungeonRunner.map.moveToTile(randomTile.position);
-    }, new MaxRegionRequirement(GameConstants.Region.kanto)));
-
-DungeonGuides.add(new DungeonGuide('Full Clear', 'Fully clears the dungeon!', [], [], 100,
-    () => {
-        // Get current position
-        const pos = DungeonRunner.map.playerPosition();
-        const nearbyTiles = DungeonRunner.map.nearbyTiles(pos);
-        const unexploredTiles = DungeonRunner.map.board()[pos.floor].flat().filter(t => !t.isVisited);
-    
-        const bossPosition = DungeonRunner.map.board()[pos.floor].flat().find(t => t.type() == GameConstants.DungeonTileType.boss)?.position;
-        const ladderPosition = DungeonRunner.map.board()[pos.floor].flat().find(t => t.type() == GameConstants.DungeonTileType.ladder)?.position;
-        
-        const test = unexploredTiles.map(t => t.position != bossPosition && t.position != ladderPosition)
-
-        if ( unexploredTiles.length == 1 ) {
-            DungeonRunner.map.moveToTile(unexploredTiles[0].position);
-            return;
-        }
-        for ( var k = 0; k < test.length; k++ ) {
-            if ( test[k] && DungeonRunner.map.hasAccessToTile(unexploredTiles[k].position) ) {
-                DungeonRunner.map.moveToTile(unexploredTiles[k].position);
-                return;
-            }
-        }
-        
-        // We didn't find what we were looking for, We just want to move weighted randomly
-        const randomTile = DungeonGuides.getRandomWeightedNearbyTile(nearbyTiles);
-        DungeonRunner.map.moveToTile(randomTile.position);
-    }, new MaxRegionRequirement(GameConstants.Region.kanto)));
-// Personal Guides End
-
 // Note: Trainer sprite is (seeded) randomly generated, or can be set manually, please make sure it kind of matches the name
 DungeonGuides.add(new DungeonGuide('Jimmy', 'Doesn\'t really know their way around a dungeon, but gives it their best try!',
     [[4, GameConstants.Currency.money]], [],
@@ -435,3 +383,55 @@ DungeonGuides.add(new DungeonGuide('Drake', 'Knows the shortest path to the boss
         const randomTile = DungeonGuides.getRandomWeightedNearbyTile(nearbyTiles);
         DungeonRunner.map.moveToTile(randomTile.position);
     }, new MaxRegionRequirement(GameConstants.Region.galar)));
+
+// Personal Guides Start
+DungeonGuides.add(new DungeonGuide('Boss', 'Knows the shortest path to the boss!', [], [], 100,
+    () => {
+        // Get current position
+        const pos = DungeonRunner.map.playerPosition();
+        const nearbyTiles = DungeonRunner.map.nearbyTiles(pos);
+
+        const bossPosition = DungeonRunner.map.board()[pos.floor].flat().find(t => t.type() == GameConstants.DungeonTileType.boss)?.position;
+        const ladderPosition = DungeonRunner.map.board()[pos.floor].flat().find(t => t.type() == GameConstants.DungeonTileType.ladder)?.position;
+    
+        const path = bossPosition || ladderPosition ? DungeonRunner.map.findShortestPath(pos, bossPosition || ladderPosition) : [];
+    
+        if (path?.length) {
+            // We found the boss or a ladder, move to it
+            DungeonRunner.map.moveToTile(path[0]);
+            return;
+        }
+    
+        // We didn't find what we were looking for, We just want to move weighted randomly
+        const randomTile = DungeonGuides.getRandomWeightedNearbyTile(nearbyTiles);
+        DungeonRunner.map.moveToTile(randomTile.position);
+    }, new MaxRegionRequirement(GameConstants.Region.kanto)));
+
+DungeonGuides.add(new DungeonGuide('Full Clear', 'Fully clears the dungeon!', [], [], 100,
+    () => {
+        // Get current position
+        const pos = DungeonRunner.map.playerPosition();
+        const nearbyTiles = DungeonRunner.map.nearbyTiles(pos);
+        const unexploredTiles = DungeonRunner.map.board()[pos.floor].flat().filter(t => !t.isVisited);
+    
+        const bossPosition = DungeonRunner.map.board()[pos.floor].flat().find(t => t.type() == GameConstants.DungeonTileType.boss)?.position;
+        const ladderPosition = DungeonRunner.map.board()[pos.floor].flat().find(t => t.type() == GameConstants.DungeonTileType.ladder)?.position;
+        
+        const test = unexploredTiles.map(t => t.position != bossPosition && t.position != ladderPosition)
+
+        if ( unexploredTiles.length == 1 ) {
+            DungeonRunner.map.moveToTile(unexploredTiles[0].position);
+            return;
+        }
+        for ( var k = 0; k < test.length; k++ ) {
+            if ( test[k] && DungeonRunner.map.hasAccessToTile(unexploredTiles[k].position) ) {
+                DungeonRunner.map.moveToTile(unexploredTiles[k].position);
+                return;
+            }
+        }
+        
+        // We didn't find what we were looking for, We just want to move weighted randomly
+        const randomTile = DungeonGuides.getRandomWeightedNearbyTile(nearbyTiles);
+        DungeonRunner.map.moveToTile(randomTile.position);
+    }, new MaxRegionRequirement(GameConstants.Region.kanto)));
+// Personal Guides End
