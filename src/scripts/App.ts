@@ -87,9 +87,9 @@ const SafariZones = function (region: GameConstants.Region): string {
     return SafariItemController.list[region]
         .filter(v => ItemList[v.item.id] instanceof PokemonItem)
         .map(v => PokemonHelper.getPokemonByName(ItemList[v.item.id].name as PokemonNameType))
-        .filter(v => v.id != 0).map(v => PokemonHelper.displayName(v.name)())
+        .filter(v => v.id != 0).map(v => PokemonHelper.displayName(v.name))
         .concat(SafariPokemonList.list[region]().filter(v => !(v.requirement instanceof ObtainedPokemonRequirement))
-        .map(v => PokemonHelper.displayName(v.name)()))
+        .map(v => PokemonHelper.displayName(v.name)))
         .join(" <-> ");
 }
 
@@ -116,7 +116,7 @@ const FarmWanderInfo = function (): string {
     [...new Set(temp.map(v => v[0] as PokemonNameType))]
         .map(v => [v, pokemonList.find(w => w.name === v).id, Math.max(Math.min(...temp.map(w => w[0] === v ? w[1] as number : -1).filter(j => j >= 0)), PokemonHelper. calcNativeRegion(pokemonList.find(w => w.name === v).name))])
         .sort(function(a, b){return (a[1] as number) - (b[1] as number)})
-        .forEach(v => result[v[2]].push(PokemonHelper.displayName(v[0] as PokemonNameType)()));
+        .forEach(v => result[v[2]].push(PokemonHelper.displayName(v[0] as PokemonNameType)));
     return JSON.stringify(result);
 }
 
@@ -167,7 +167,7 @@ const TypedEggInfo = function (): string {
             App.game.breeding.hatchList[GameConstants.EggItemType.Fighting_egg],
             App.game.breeding.hatchList[GameConstants.EggItemType.Electric_egg],
             App.game.breeding.hatchList[GameConstants.EggItemType.Dragon_egg]
-        ].map(x => x.map(v => v.map(w => PokemonHelper.displayName(w)())))
+        ].map(x => x.map(v => v.map(w => PokemonHelper.displayName(w))))
     return JSON.stringify(x);
 }
 
@@ -183,7 +183,7 @@ const RoutesInfo = function (region: GameConstants.Region): string {
     var result = Routes.getRoutesByRegion(region).sort((a, b) => a.number - b.number)
     .map(x => [
         x.routeName,
-        x.pokemon.land.concat(x.pokemon.water, x.pokemon.headbutt, ...x.pokemon.special.map(p => (!RemoveEvent(p.req) ? p.pokemon : []) ) ).map(v => PokemonHelper.displayName(v)())
+        x.pokemon.land.concat(x.pokemon.water, x.pokemon.headbutt, ...x.pokemon.special.map(p => (!RemoveEvent(p.req) ? p.pokemon : []) ) ).map(v => PokemonHelper.displayName(v))
     ]);
     Routes.getRoutesByRegion(region).forEach(v => {
         v.pokemon.special.forEach(w => {
@@ -200,7 +200,7 @@ const DungeonsInfo = function (region: GameConstants.Region): string {
         [].concat(  ...dungeonList[k].enemyList.filter(v => typeof v === 'string'),
                     ...dungeonList[k].enemyList.filter(v => !(typeof v === 'string') && !(v instanceof DungeonTrainer)).map(v => v as DetailedPokemon).map(v => !RemoveEvent(v.options?.requirement) ? v.pokemon : []),
                     ...dungeonList[k].bossList.filter(v => !(v instanceof DungeonTrainer)).map(v => !RemoveEvent(v.options?.requirement) ? v.name : [])
-                 ).map(v => PokemonHelper.displayName(v)()),
+                 ).map(v => PokemonHelper.displayName(v)),
         [].concat(...[].concat(...Object.entries(dungeonList[k].lootTable).map(([_, v]) => v).flat().map(v => pokemonMap[v.loot].name != 'MissingNo.' ? v : [])).map(v => !RemoveEvent(v.requirement) ? v.loot : []))
     ]);
     GameConstants.RegionDungeons[region].forEach(w => {
