@@ -74,15 +74,6 @@ class App {
 App satisfies TmpAppType;
 
 // Personal Functions
-const MissingMonoTypes = function (type: PokemonType): PokemonNameType[] {
-    return pokemonList.filter(p =>
-        p.id > 0 &&
-        (p.type[0] == type || p.type[1] == type) &&
-        PokemonHelper.calcNativeRegion(p.name) <= player.highestRegion() &&
-        PartyController.getCaughtStatusByName(p.name) == CaughtStatus.NotCaught
-    ).map(p => p.name)
-}
-
 const SafariZones = function (region: GameConstants.Region): string {
     return SafariItemController.list[region]
         .filter(v => ItemList[v.item.id] instanceof PokemonItem)
@@ -94,13 +85,12 @@ const SafariZones = function (region: GameConstants.Region): string {
 }
 
 const FarmWanderInfo = function (): string {
-    var i;
     var result = [];
     var region = [
         /*Kanto*/ [],
         /*Jotho*/ [BerryType.Chople, BerryType.Kebia, BerryType.Shuca, BerryType.Charti, BerryType.Babiri, BerryType.Chilan, BerryType.Petaya], // #5484 -> []
-        /*Hoenn*/ [BerryType.Pinkan, BerryType.Kee, BerryType.Maranga, BerryType.Liechi, BerryType.Ganlon, BerryType.Salac, BerryType.Enigma], // #5484 -> [BerryType.Pinkan, BerryType.Enigma]
-        /*Sinnoh*/ [BerryType.Apicot, BerryType.Lansat, BerryType.Snover], //#5484 -> [BerryType.Snover]
+        /*Hoenn*/ [BerryType.Pinkan, BerryType.Kee, BerryType.Maranga, BerryType.Liechi, BerryType.Ganlon, BerryType.Salac, BerryType.Enigma],
+        /*Sinnoh*/ [BerryType.Apicot, BerryType.Lansat, BerryType.Snover],
         /*Unova*/ [],
         /*Kalos*/ [],
         /*Alola*/ [],
@@ -442,40 +432,6 @@ const HowLikelyShinyCatch = function (type: string): string {
 
 const HowManyDungeonRuns = function (): number {
     return Math.floor(App.game.wallet.currencies[GameConstants.Currency.dungeonToken]() / player.town.dungeon.tokenCost);
-}
-
-const BattleFrontierTypeDistro = function (): string {
-    var list = pokemonList.filter(
-        (p) => p.id > 0
-        && (p as PokemonListData).nativeRegion >= 0
-        && (p as PokemonListData).nativeRegion <= player.highestRegion()
-    )
-    var amount = new Array(list.length + 1).fill(0);
-    list.forEach(p => amount[Math.floor(p.id)]++);
-    var types = new Array(18);
-    for ( var i = 0; i < types.length; i++ ) {
-        types[i] = new Array(18).fill(0);
-    }
-    var max_id = 0;
-    for ( var i = 0; i < list.length; i++ ) {
-        var id = Math.floor(list[i].id);
-        if ( list[i].type.length == 1 ) {
-            var type = list[i].type[0];
-            types[type][type] += (1 / amount[id]);
-        } else {
-            var type1 = list[i].type[0];
-            var type2 = list[i].type[1];
-            types[type1][type2] += (1 / amount[id]);
-            types[type2][type1] += (1 / amount[id]);
-        }
-        max_id = Math.max(max_id, id);
-    }
-    for ( var i = 0; i < types.length; i++ ) {
-        for ( var j = 0; j < types.length; j++ ) {
-            types[i][j] /= max_id;
-        }
-    }
-    return JSON.stringify(types);
 }
 
 const BattleFrontierBot = function () {
