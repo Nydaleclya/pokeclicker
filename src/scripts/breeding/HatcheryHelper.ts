@@ -36,7 +36,6 @@ class HatcheryHelper {
     public nextBonus: KnockoutObservable<number> = ko.observable(1).extend({ numeric: 0 });
     public categories: KnockoutObservableArray<number> = ko.observableArray([]);
     public useHatcheryFilters: KnockoutObservable<boolean> = ko.observable(true);
-    public realCost: KnockoutObservable<number> = ko.observable(0).extend({ numeric: 0 });;
     // public level: number;
     // public experience: number;
 
@@ -49,7 +48,6 @@ class HatcheryHelper {
     ) {
         SeededRand.seed(parseInt(this.name, 36));
         this.trainerSprite = SeededRand.intBetween(0, 118);
-        this.realCost(this.cost.amount * (1 - (this.hatchBonus() / 50)))
 
         this.tooltip = ko.pureComputed(() => `<strong>${this.name}</strong><br/>
             Cost: <img src="assets/images/currency/${GameConstants.Currency[this.cost.currency]}.svg" width="20px">&nbsp;${(this.realCost()).toLocaleString('en-US')}/hatch<br/>
@@ -74,8 +72,9 @@ class HatcheryHelper {
         this.attackEfficiency(this.attackEfficiencyBase + this.hatchBonus());
         this.prevBonus(HatcheryHelperMinBonusMap[this.hatchBonus()] || 0);
         this.nextBonus(HatcheryHelperMinBonusMap[((this.hatchBonus() * 10) + 1) / 10] || 1);
-        this.realCost(this.cost.amount * (1 - (this.hatchBonus() / 50)));
     }
+
+    public realCost = ko.pureComputed(() => this.cost.amount * (1 - (this.hatchBonus() / 50)))
 
     isUnlocked(): boolean {
         return this.unlockRequirement?.isCompleted() ?? true;
