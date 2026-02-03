@@ -11,6 +11,7 @@
 class Game implements TmpGameType {
     frameRequest;
     public static achievementCounter = 0;
+    public static lastLogDate = 0;
     private _gameState: KnockoutObservable<GameConstants.GameState>;
     private worker: Worker;
 
@@ -398,6 +399,26 @@ class Game implements TmpGameType {
     stop() {
         cancelAnimationFrame(this.frameRequest);
         window.onbeforeunload = () => {};
+    }
+
+    logging() {
+        if ( Game.lastLogDate == 0 ) {
+            Object.keys(LogBookTypes).forEach(v => App.game.logbook.filters[v](false));
+            App.game.logbook.filters["SHINY"](true);
+            App.game.logbook.filters["CAUGHT"](true);
+            App.game.logbook.filters["ESCAPED"](true);
+        }
+        const logs = App.game.logbook.filteredLogs();
+        for ( var i = logs.length - 1; i > 0; i-- ) {
+            if ( logs[i].date <= Game.lastLogDate ) continue;
+            if ( logs[i].type.label == "SHINY" ) {
+                var place = logs[i].description().split("]").length > 1 ? logs[i].description().split("]")[0].split("[")[1] : "Check by Hand";
+                var temp = 1;
+                while ( logs[i - temp].type.label != "ESCAPED" && logs[i - temp].type.label != "CAUGHT" && temp < i ) temp++;
+                console.log(place + " - " + logs[i - temp].description() + " - " + new Date(logs[i - temp].date));
+                Game.lastLogDate = new Date(logs[i - temp].date).getTime();
+            }
+        }
     }
 
     gameTick() {

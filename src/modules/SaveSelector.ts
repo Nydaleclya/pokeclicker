@@ -9,7 +9,7 @@ import GameLoadState from './utilities/GameLoadState';
 import * as DownloadUtil from './utilities/DownloadUtil';
 
 export default class SaveSelector {
-    static MAX_SAVES = 9;
+    static MAX_SAVES = 20;
 
     static loadSaves() {
         const container = document.querySelector('#saveSelector .save-container');

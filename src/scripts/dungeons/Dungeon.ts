@@ -110,7 +110,7 @@ class Dungeon {
         public tokenCost: number,
         public difficultyRoute: number, // Closest route in terms of difficulty, used for egg steps, dungeon tokens etc.
         public rewardFunction = () => {},
-        private optionalParameters: optionalDungeonParameters = {}
+        public optionalParameters: optionalDungeonParameters = {}
     ) {
         // Keep a list of mimics to use with getCaughtMimics()
         Object.entries(this.lootTable).forEach(([_, itemList]) => {

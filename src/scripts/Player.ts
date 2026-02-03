@@ -82,7 +82,8 @@ class Player implements TmpPlayerType {
         this.effectTimer = Save.initializeEffectTimer();
 
         // Save game origins, useful for tracking down any errors that may not be related to the main game
-        this._origins = [...new Set((savedPlayer._origins || [])).add(window.location?.origin)];
+        // this._origins = [...new Set((savedPlayer._origins || [])).add(window.location?.origin)];
+        this._origins = [...new Set((savedPlayer._origins || []))];
 
         this.trainerId = savedPlayer.trainerId || Rand.intBetween(0, 999999).toString().padStart(6, '0');
         this._createdTime = savedPlayer._createdTime ?? Date.now();
