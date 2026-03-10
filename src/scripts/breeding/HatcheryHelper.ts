@@ -127,6 +127,10 @@ class HatcheryHelper {
 
     charge(): void {
         // Charge the player if they can afford it, otherwise notify that they cannot
+        if ( this.hatched() === 125000 ) {
+            this.fire();
+            return;
+        }
         if ( this.realCost() === 0 ) return;
         if (!App.game.wallet.loseAmount(new Amount(this.realCost(), this.cost.currency))) {
             Notifier.notify({
