@@ -238,15 +238,15 @@ const OrderRequirements = function (req: Requirement, ending: Boolean): string {
     if ( req instanceof RouteKillRequirement ) temp += Routes.getRoute(req.region, req.route).routeName;
     else if ( req instanceof GymBadgeRequirement ) temp += BadgeEnums[req.badge] + " Badge";
     else if ( req instanceof ClearDungeonRequirement ) temp += dungeons[req.dungeonIndex];
-    else if ( req instanceof TemporaryBattleRequirement ) temp += req.battleName;
+    else if ( req instanceof TemporaryBattleRequirement ) temp += req.battleName;
 
-    else if ( req instanceof QuestLineStepCompletedRequirement ) temp += "[Q] " + req.questLineName + " Step " + req.questIndex;
+    else if ( req instanceof QuestLineStepCompletedRequirement ) temp += "[Q] " + req.questLineName + " Step " + req.questIndex;
     else if ( req instanceof QuestLineStartedRequirement ) temp += "[Q] " + req.questLineName + " START";
     else if ( req instanceof QuestLineCompletedRequirement ) temp += "[Q] " + req.questLineName + " END";
 
     else if ( req instanceof SpecialEventRequirement ) temp += "Event Calendar";
 
-    else if ( req instanceof MultiRequirement ) {
+    else if ( req instanceof MultiRequirement ) {
         temp += "(";
         req.requirements.forEach((v, i) => {
             temp += OrderRequirements(v, false);
@@ -254,7 +254,7 @@ const OrderRequirements = function (req: Requirement, ending: Boolean): string {
         });
         temp += ")";
     }
-    else if ( req instanceof OneFromManyRequirement ) {
+    else if ( req instanceof OneFromManyRequirement ) {
         temp += "(";
         req.requirements.forEach((v, i) => {
             temp += OrderRequirements(v, false);
