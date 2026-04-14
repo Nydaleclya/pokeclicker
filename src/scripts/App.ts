@@ -84,17 +84,17 @@ const MissingMonoTypes = function (type: PokemonType): PokemonNameType[] {
 }
 
 const SafariZones = function (region: GameConstants.Region): string {
-    return SafariItemController.list[region]
+    return (SafariItemController.list[region] as SafariItemWeighed[])
         .filter(v => ItemList[v.item.id] instanceof PokemonItem)
         .map(v => PokemonHelper.getPokemonByName(ItemList[v.item.id].name as PokemonNameType))
         .filter(v => v.id != 0).map(v => PokemonHelper.displayName(v.name))
-        .concat(SafariPokemonList.list[region]().filter(v => !(v.requirement instanceof ObtainedPokemonRequirement))
+        .concat((SafariPokemonList.list[region] as KnockoutObservable<SafariEncounter[]>)().filter(v => !(v.requirement instanceof ObtainedPokemonRequirement))
         .map(v => PokemonHelper.displayName(v.name)))
         .join(" <-> ");
 }
 
 const FarmWanderInfo = function (): string {
-    var result = [];
+    var result: (string[])[] = [];
     var region = [
         /*Kanto*/ [],
         /*Jotho*/ [BerryType.Chople, BerryType.Kebia, BerryType.Shuca, BerryType.Charti, BerryType.Babiri, BerryType.Chilan, BerryType.Petaya], // #5484 -> []
@@ -113,47 +113,43 @@ const FarmWanderInfo = function (): string {
 
     var temp = App.game.farming.berryData.flatMap(v => v.wander.map(w => [w, region.flatMap((a, b) => a.includes(v.type) ? b : -1).filter(i => i >= 0)[0]]));
     [...new Set(temp.map(v => v[0] as PokemonNameType))]
-        .map(v => [v, pokemonList.find(w => w.name === v).id, Math.max(Math.min(...temp.map(w => w[0] === v ? w[1] as number : -1).filter(j => j >= 0)), PokemonHelper. calcNativeRegion(pokemonList.find(w => w.name === v).name))])
-        .sort(function(a, b){return (a[1] as number) - (b[1] as number)})
-        .forEach(v => result[v[2]].push(PokemonHelper.displayName(v[0] as PokemonNameType)));
+        .map(v => [v, Math.max(Math.min(...temp.map(w => w[0] === v ? w[1] as number : -1).filter(j => j >= 0)), PokemonHelper.calcNativeRegion(v))])
+        .sort(function(a, b){return (a[0] as string).localeCompare(b[0] as string)})
+        .forEach(v => result[v[1] as number].push(PokemonHelper.displayName(v[0] as PokemonNameType)));
     return JSON.stringify(result);
 }
 
 const EvoItems = function (): string {
-    var all = [];
-    var underground = [];
-    var held_items = [];
+    var all: Set<EvolutionStone> = new Set();
+    var underground: Set<UndergroundItem> = new Set();
+    var held_items: Set<string> = new Set();
     Object.keys(ItemList).forEach(v => {
-        if ( ItemList[v] instanceof EvolutionStone ) all.push(ItemList[v]);
+        if ( ItemList[v] instanceof EvolutionStone ) all.add(ItemList[v]);
     });
     UndergroundItems.list.forEach(v => {
-        if ( v.valueType === UndergroundItemValueType.EvolutionItem ) underground.push(v);
+        if ( v.valueType === UndergroundItemValueType.EvolutionItem ) underground.add(v);
     });
     pokemonList.forEach(v => {
         if ( v.hasOwnProperty("heldItem") ) {
-            if ( PokemonHelper.getPokemonByName(v.name).heldItem.type === ItemType.item ) {
-                held_items.push(PokemonHelper.getPokemonByName(v.name).heldItem);
+            if ( PokemonHelper.getPokemonByName(v.name).heldItem?.type === ItemType.item ) {
+                held_items.add(PokemonHelper.getPokemonByName(v.name).heldItem?.id as string);
             }
         }
     });
-    held_items = [...new Set(held_items.map(v => v.id))];
     underground.forEach(v => {
-        all = all.map(w => {
-            if ( !(w instanceof EvolutionStone) ) return "";
-            if ( w.name.toLowerCase() === (v.name).replace(" ","_").toLowerCase() ) return "";
-            return w;
+        all.forEach(w => {
+            if ( w.name.toLowerCase() === (v.name).replace(" ","_").toLowerCase() ) all.delete(w);
         });
     });
     held_items.forEach(v => {
-        all = all.map(w => {
-            if ( !(w instanceof EvolutionStone) ) return "";
-            if ( w.name.toLowerCase() === v.toLowerCase() ) return "";
-            return w;
+        all.forEach(w => {
+            if ( w.name.toLowerCase() === v.toLowerCase() ) all.delete(w);
         });
     });
-    all = all.filter(Boolean);
+    var out: string[] = [];
+    all.forEach(v => out.push(v.name))
 
-    return JSON.stringify(all.map(v => v.name));
+    return JSON.stringify(out);
 }
 
 const TypedEggInfo = function (): string {
@@ -170,7 +166,7 @@ const TypedEggInfo = function (): string {
     return JSON.stringify(x);
 }
 
-const RemoveEvent = function (req: Requirement): Boolean {
+const RemoveEvent = function (req: Requirement | undefined): Boolean {
     if ( req instanceof MultiRequirement ) return req.requirements.some(v => RemoveEvent(v));
     if ( req instanceof OneFromManyRequirement ) return req.requirements.every(v => RemoveEvent(v));
     if ( req instanceof SpecialEventRequirement ) return true;
@@ -196,11 +192,10 @@ const DungeonsInfo = function (region: GameConstants.Region): string {
     var result = GameConstants.RegionDungeons[region]
     .map(k => [
         k,
-        [].concat(
-            ...dungeonList[k].enemyList.filter(v => typeof v === 'string'),
-            ...dungeonList[k].enemyList.filter(v => !(typeof v === 'string') && !(v instanceof DungeonTrainer)).map(v => v as DetailedPokemon).map(v => !RemoveEvent(v.options?.requirement) ? v.pokemon : []),
-            ...dungeonList[k].bossList.filter(v => !(v instanceof DungeonTrainer)).map(v => !RemoveEvent(v.options?.requirement) ? v.name : [])
-        ).map(v => PokemonHelper.displayName(v)),
+        [dungeonList[k].enemyList, dungeonList[k].bossList].flat().filter(v => !(v instanceof DungeonTrainer))
+            .map(v => v instanceof DungeonBossPokemon ? (!RemoveEvent(v.options?.requirement) ? v.name : []) : v).flat()
+            .map(v => v.hasOwnProperty("options") ? (!RemoveEvent(v.options?.requirement) ? v.pokemon : []) : v).flat()
+            .map(v => PokemonHelper.displayName(v)),
         [].concat(...[].concat(...Object.entries(dungeonList[k].lootTable).map(([_, v]) => v).flat().map(v => pokemonMap[v.loot].name != 'MissingNo.' ? v : [])).map(v => !RemoveEvent(v.requirement) ? v.loot : []))
     ]);
     GameConstants.RegionDungeons[region].forEach(w => {
@@ -310,13 +305,13 @@ const DungeonOrder = function (region: GameConstants.Region): string {
     var temp = "";
     GameConstants.RegionDungeons[region].forEach(w => {
         temp += w + "|";
-        if ( TownList[w].dungeon.optionalParameters?.requirement ) {
-            temp += OrderRequirements(TownList[w].dungeon.optionalParameters?.requirement, true);
+        if ( TownList[w].dungeon?.optionalParameters.requirement ) {
+            temp += OrderRequirements(TownList[w].dungeon.optionalParameters.requirement, true);
         }
         TownList[w].requirements.forEach(v => {
             temp += OrderRequirements(v, true);
         });
-        var rew = String(TownList[w].dungeon.rewardFunction);
+        var rew = String(TownList[w].dungeon?.rewardFunction);
         if ( rew != "() => { }" ) {
             if ( rew.search("DungeonGainGymBadge") >= 0 ) {
                 temp += eval("BadgeEnums[" + rew.substring(rew.search("GymList")).replace(")",".badgeReward") + "]") + " Badge|";
@@ -362,7 +357,7 @@ const TemporaryBattleOrder = function (): string {
 
 const RouteAchieves = function () {
     var cooldown = 1000;
-    var highest = Math.max(...Routes.getRoutesByRegion(player.region).map(v => v.orderNumber));
+    var highest = Math.max(...Routes.getRoutesByRegion(player.region).map(v => v.orderNumber ?? 0));
     if (
         App.game.statistics.routeKills[player.region][player.route]() >= Math.max(...GameConstants.ACHIEVEMENT_DEFEAT_ROUTE_VALUES) &&
         GameConstants.Pokerus.Resistant === RouteHelper.minPokerus(RouteHelper.getAvailablePokemonList(player.route, player.region, true).filter(w => App.game.party.caughtPokemon.filter(v => v.name === w)[0].pokerus != GameConstants.Pokerus.Uninfected)) &&
