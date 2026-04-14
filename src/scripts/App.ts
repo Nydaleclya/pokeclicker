@@ -120,7 +120,7 @@ const FarmWanderInfo = function (): string {
 }
 
 const EvoItems = function (): string {
-    var all: Set<EvolutionStone> = new Set();
+    var all: Set<Item> = new Set();
     var underground: Set<UndergroundItem> = new Set();
     var held_items: Set<string> = new Set();
     Object.keys(ItemList).forEach(v => {
