@@ -412,10 +412,32 @@ class Game implements TmpGameType {
         for ( var i = logs.length - 1; i > 0; i-- ) {
             if ( logs[i].date <= Game.lastLogDate ) continue;
             if ( logs[i].type.label == "SHINY" ) {
-                var place = logs[i].description().split("]").length > 1 ? logs[i].description().split("]")[0].split("[")[1] : "Check by Hand";
+                var place = "Check by Hand";
+                var color = "red";
+                if ( logs[i].description().split("]").length > 1 ) {
+                    place = logs[i].description().split("]")[0].split("[")[1];
+                    color = "green";
+                }
+                if ( place === "Check by Hand" && logs[i].description().includes("hatched") ) {
+                    place = "Hatching";
+                    color = "white";
+                }
+                if ( place === "Check by Hand" && logs[i].description().includes("purchased") ) {
+                    place = "Shop Pokemon";
+                    color = "gold";
+                }
+                if ( place === "Check by Hand" && logs[i].description().includes("wandered onto the farm") ) {
+                    place = "Farm Wanderer";
+                    color = "darkgreen";
+                }
+                if ( place === "Check by Hand" && logs[i].description().includes("evolved") ) {
+                    place = "Evolution Item";
+                    color = "darkturquoise";
+                }
+
                 var temp = 1;
                 while ( logs[i - temp].type.label != "ESCAPED" && logs[i - temp].type.label != "CAUGHT" && temp < i ) temp++;
-                console.log(place + " - " + logs[i - temp].description() + " - " + new Date(logs[i - temp].date));
+                console.log("%c " + place + " - " + logs[i - temp].description() + " - " + new Date(logs[i - temp].date), "color:" + color);
                 Game.lastLogDate = new Date(logs[i - temp].date).getTime();
             }
         }
