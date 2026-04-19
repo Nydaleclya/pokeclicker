@@ -75,10 +75,11 @@ App satisfies TmpAppType;
 
 // Personal Functions
 const MissingMonoTypes = function (type: PokemonType): PokemonNameType[] {
+    const myself = player as Player;
     return pokemonList.filter(p =>
         p.id > 0 &&
         (p.type[0] == type || p.type[1] == type) &&
-        PokemonHelper.calcNativeRegion(p.name) <= player.highestRegion() &&
+        PokemonHelper.calcNativeRegion(p.name) <= myself.highestRegion() &&
         PartyController.getCaughtStatusByName(p.name) == CaughtStatus.NotCaught
     ).map(p => p.name);
 };
@@ -391,22 +392,23 @@ const TemporaryBattleOrder = function (): string {
 };
 
 const RouteAchieves = function () {
+    const myself = player as Player;
     const cooldown = 1000;
-    let highest = Math.max(...Routes.getRoutesByRegion(player.region).map(v => v.orderNumber ?? 0));
+    const highest = Math.max(...Routes.getRoutesByRegion(myself.region).map(v => v.orderNumber ?? 0));
     if (
-        App.game.statistics.routeKills[player.region][player.route]() >= Math.max(...GameConstants.ACHIEVEMENT_DEFEAT_ROUTE_VALUES) &&
-        GameConstants.Pokerus.Resistant === RouteHelper.minPokerus(RouteHelper.getAvailablePokemonList(player.route, player.region, true).filter(w => App.game.party.caughtPokemon.filter(v => v.name === w)[0].pokerus != GameConstants.Pokerus.Uninfected)) &&
-        highest === Routes.getRoute(player.region, player.route).orderNumber
+        App.game.statistics.routeKills[myself.region][myself.route]() >= Math.max(...GameConstants.ACHIEVEMENT_DEFEAT_ROUTE_VALUES) &&
+        GameConstants.Pokerus.Resistant === RouteHelper.minPokerus(RouteHelper.getAvailablePokemonList(myself.route, myself.region, true).filter(w => App.game.party.caughtPokemon.filter(v => v.name === w)[0].pokerus != GameConstants.Pokerus.Uninfected)) &&
+        highest === Routes.getRoute(myself.region, myself.route).orderNumber
     ) {
         console.log('STOP - Route Achieves Finished');
         return;
     }
     if (
-        App.game.statistics.routeKills[player.region][player.route]() >= Math.max(...GameConstants.ACHIEVEMENT_DEFEAT_ROUTE_VALUES) &&
-        GameConstants.Pokerus.Resistant === RouteHelper.minPokerus(RouteHelper.getAvailablePokemonList(player.route, player.region, true).filter(w => App.game.party.caughtPokemon.filter(v => v.name === w)[0].pokerus != GameConstants.Pokerus.Uninfected)) &&
+        App.game.statistics.routeKills[myself.region][myself.route]() >= Math.max(...GameConstants.ACHIEVEMENT_DEFEAT_ROUTE_VALUES) &&
+        GameConstants.Pokerus.Resistant === RouteHelper.minPokerus(RouteHelper.getAvailablePokemonList(myself.route, myself.region, true).filter(w => App.game.party.caughtPokemon.filter(v => v.name === w)[0].pokerus != GameConstants.Pokerus.Uninfected)) &&
         highest != Routes.getRoute(player.region, player.route).orderNumber
     ) {
-        MapHelper.moveToRoute(Routes.unnormalizeRoute(Routes.normalizedNumber(player.region, player.route, false) + 1), player.region);
+        MapHelper.moveToRoute(Routes.unnormalizeRoute(Routes.normalizedNumber(myself.region, myself.route, false) + 1), myself.region);
     }
     setTimeout(() => RouteAchieves(), cooldown);
     return;
@@ -431,52 +433,56 @@ const TemporaryBattleBot = function (battle: TemporaryBattle) {
 };
 
 const UndergoundSellAll = function () {
+    const myself = player as Player;
     const items = [...new Set(Object.values(UndergroundItems.list).map(i => i.name))];
     for ( let i = 0; i < items.length; i++ ) {
         if ( UndergroundItems.getByName(items[i]).valueType == UndergroundItemValueType.Diamond ) {
-            UndergroundController.sellMineItem(UndergroundItems.getByName(items[i]), player.itemList[UndergroundItems.getByName(items[i]).itemName]());
+            UndergroundController.sellMineItem(UndergroundItems.getByName(items[i]), myself.itemList[UndergroundItems.getByName(items[i]).itemName]());
         }
     }
 };
 
 const HighestOneShot = function (): string {
-    DamageCalculator.region(player.region);
+    const myself = player as Player;
+    DamageCalculator.region(myself.region);
     DamageCalculator.weather(Weather.currentWeather());
-    const routes = Routes.getRoutesByRegion(player.region)
+    const routes = Routes.getRoutesByRegion(myself.region)
         .map(v => RouteHelper.getAvailablePokemonList(v.number, player.region)
             .map((w, _, arr) => {
-                const tempH = PokemonFactory.routeHealth(v.number, player.region);
+                const tempH = PokemonFactory.routeHealth(v.number, myself.region);
                 const avg = arr.map(p => pokemonMap[p].base.hitpoints).reduce((acc, q, j) => (acc + (q - acc) / (j + 1)), 0);
                 const health = Math.round((tempH - tempH / 10) + (tempH / 10 / avg * PokemonHelper.getPokemonByName(w).hitpoints));
                 DamageCalculator.type1(PokemonHelper.getPokemonByName(w).type1);
                 DamageCalculator.type2(PokemonHelper.getPokemonByName(w).type2);
                 return DamageCalculator.totalDamage() >= health;
             })
-            .every(Boolean) ? Routes.normalizedNumber(player.region, v.number, false) : -1);
+            .every(Boolean) ? Routes.normalizedNumber(myself.region, v.number, false) : -1);
 
-    return routes.length > 0 ? Routes.getName(Routes.unnormalizeRoute(Math.max(...routes)), player.region) : 'No One Shot';
+    return routes.length > 0 ? Routes.getName(Routes.unnormalizeRoute(Math.max(...routes)), myself.region) : 'No One Shot';
 };
 
 const HowLikelyShinyCatch = function (type: string): string {
-    let out = [];
+    const myself = player as Player;
+    const out: PokemonNameType[] = [];
 
     if ( type == 'R' ) {
-        out.push(...RouteHelper.getAvailablePokemonList(player.route, player.region, true));
+        out.push(...RouteHelper.getAvailablePokemonList(myself.route, myself.region, true));
     }
     if ( type == 'D' ) {
-        out.push(...player.town.dungeon.allAvailablePokemon());
+        out.push(...(myself.town?.dungeon?.allAvailablePokemon() as PokemonNameType[]));
     }
 
-    out = out.map(v => PokemonHelper.getPokemonByName(v).id)
+    const output = out.map(v => PokemonHelper.getPokemonByName(v).id)
         .filter(v => !App.game.party.alreadyCaughtPokemon(v, true))
         .map(v => [v, PokemonFactory.catchRateHelper(pokemonMap[v].catchRate, true), App.game.statistics.shinyPokemonEncountered[v]()])
         .map(v => `${PokemonHelper.getPokemonById(v[0]).name}: ${((1 - Math.pow((100 - (v[1] + 10)) / 100, v[2])) * 100).toFixed(2)}%`);
 
-    return out.join('\n');
+    return output.join('\n');
 };
 
 const HowManyDungeonRuns = function (): number {
-    return Math.floor(App.game.wallet.currencies[GameConstants.Currency.dungeonToken]() / player.town.dungeon.tokenCost);
+    const myself = player as Player;
+    return Math.floor(App.game.wallet.currencies[GameConstants.Currency.dungeonToken]() / myself.town.dungeon.tokenCost);
 };
 
 const BattleFrontierBot = function () {
