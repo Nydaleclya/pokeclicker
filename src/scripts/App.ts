@@ -482,7 +482,7 @@ const HowLikelyShinyCatch = function (type: string): string {
 
 const HowManyDungeonRuns = function (): number {
     const myself = player as Player;
-    return Math.floor(App.game.wallet.currencies[GameConstants.Currency.dungeonToken]() / myself.town.dungeon.tokenCost);
+    return Math.floor(App.game.wallet.currencies[GameConstants.Currency.dungeonToken]() / (myself.town?.dungeon?.tokenCost ?? 1));
 };
 
 const BattleFrontierBot = function () {
