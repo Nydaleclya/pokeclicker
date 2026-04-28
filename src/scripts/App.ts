@@ -406,7 +406,7 @@ const RouteAchieves = function () {
     if (
         App.game.statistics.routeKills[myself.region][myself.route]() >= Math.max(...GameConstants.ACHIEVEMENT_DEFEAT_ROUTE_VALUES) &&
         GameConstants.Pokerus.Resistant === RouteHelper.minPokerus(RouteHelper.getAvailablePokemonList(myself.route, myself.region, true).filter(w => App.game.party.caughtPokemon.filter(v => v.name === w)[0].pokerus != GameConstants.Pokerus.Uninfected)) &&
-        highest != Routes.getRoute(player.region, player.route).orderNumber
+        highest != Routes.getRoute(myself.region, myself.route).orderNumber
     ) {
         MapHelper.moveToRoute(Routes.unnormalizeRoute(Routes.normalizedNumber(myself.region, myself.route, false) + 1), myself.region);
     }
@@ -447,7 +447,7 @@ const HighestOneShot = function (): string {
     DamageCalculator.region(myself.region);
     DamageCalculator.weather(Weather.currentWeather());
     const routes = Routes.getRoutesByRegion(myself.region)
-        .map(v => RouteHelper.getAvailablePokemonList(v.number, player.region)
+        .map(v => RouteHelper.getAvailablePokemonList(v.number, myself.region)
             .map((w, _, arr) => {
                 const tempH = PokemonFactory.routeHealth(v.number, myself.region);
                 const avg = arr.map(p => pokemonMap[p].base.hitpoints).reduce((acc, q, j) => (acc + (q - acc) / (j + 1)), 0);
@@ -469,7 +469,7 @@ const HowLikelyShinyCatch = function (type: string): string {
         out.push(...RouteHelper.getAvailablePokemonList(myself.route, myself.region, true));
     }
     if ( type == 'D' ) {
-        out.push(...(myself.town?.dungeon?.allAvailablePokemon() as PokemonNameType[]));
+        out.push(...(myself.town.dungeon?.allAvailablePokemon() as PokemonNameType[]));
     }
 
     const output = out.map(v => PokemonHelper.getPokemonByName(v).id)
@@ -482,7 +482,7 @@ const HowLikelyShinyCatch = function (type: string): string {
 
 const HowManyDungeonRuns = function (): number {
     const myself = player as Player;
-    return Math.floor(App.game.wallet.currencies[GameConstants.Currency.dungeonToken]() / (myself.town?.dungeon?.tokenCost ?? 1));
+    return Math.floor(App.game.wallet.currencies[GameConstants.Currency.dungeonToken]() / (myself.town.dungeon?.tokenCost ?? 1));
 };
 
 const BattleFrontierBot = function () {
