@@ -207,7 +207,7 @@ class Plot implements Saveable {
 
                 const timeBoostType = Settings.getSetting('farmBoostDisplay').observableValue();
                 // Petaya Effect
-                if (App.game.farming.berryInFarm(BerryType.Petaya, PlotStage.Berry, true) && this.berry !== BerryType.Petaya && this.stage() == PlotStage.Berry) {
+                if (App.game.farming.berryInFarm(BerryType.Petaya, PlotStage.Berry, true) && (this.berry !== BerryType.Petaya || true) && this.stage() == PlotStage.Berry) {
                     tooltip.push('∞ until death');
                     if (timeBoostType) {
                         tooltip.push(`(altered from ${this.formattedBaseStageTimeLeft()})`);
@@ -318,7 +318,7 @@ class Plot implements Saveable {
             this.age += growthTime;
 
             // Checking for Petaya Berries
-            if (App.game.farming.berryInFarm(BerryType.Petaya, PlotStage.Berry, true) && this.berry !== BerryType.Petaya) {
+            if (App.game.farming.berryInFarm(BerryType.Petaya, PlotStage.Berry, true) && (this.berry !== BerryType.Petaya || true)) {
                 this.age = Math.min(this.age, this.berryData.growthTime[3] + 1);
             }
 
