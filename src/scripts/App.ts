@@ -125,11 +125,20 @@ const FarmWanderInfo = function (): string {
 };
 
 const EvoItems = function (): string {
+    const farmableCurrency: Array<GameConstants.Currency> = [];
+    farmableCurrency.push(GameConstants.Currency.money);
+    // farmableCurrency.push(GameConstants.Currency.questPoint); // Not AFK farmable
+    farmableCurrency.push(GameConstants.Currency.dungeonToken);
+    farmableCurrency.push(GameConstants.Currency.diamond);
+    farmableCurrency.push(GameConstants.Currency.farmPoint);
+    farmableCurrency.push(GameConstants.Currency.battlePoint);
+    // farmableCurrency.push(GameConstants.Currency.contestToken); // Not AFK farmable yet
+
     const all: Set<Item> = new Set();
     const underground: Set<UndergroundItem> = new Set();
     const heldItems: Set<string> = new Set();
     Object.keys(ItemList).forEach(v => {
-        if ( ItemList[v] instanceof EvolutionStone ) {
+        if ( ItemList[v] instanceof EvolutionStone && !farmableCurrency.includes(ItemList[v].currency) ) {
             all.add(ItemList[v]);
         }
     });
