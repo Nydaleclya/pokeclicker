@@ -238,7 +238,8 @@ export default class GameHelper {
         return grey > 127;
     }
 
-    public static isDevelopmentBuild(): boolean { return false;
+    public static isDevelopmentBuild(): boolean {
+        return false;
         // This was done like this so es/tslint doesn't throw errors
         try {
             return !!JSON.parse('$DEVELOPMENT');
