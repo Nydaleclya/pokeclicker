@@ -149,8 +149,9 @@ const EvoItems = function (): string {
     });
     pokemonList.forEach(v => {
         if ( v.hasOwnProperty('heldItem') ) {
-            if ( PokemonHelper.getPokemonByName(v.name).heldItem?.type === ItemType.item ) {
-                heldItems.add(PokemonHelper.getPokemonByName(v.name).heldItem?.id as string);
+            const heldItem = PokemonHelper.getPokemonByName(v.name).heldItem as BagItem;
+            if ( heldItem.type === ItemType.item ) {
+                heldItems.add(heldItem.id as string);
             }
         }
     });
