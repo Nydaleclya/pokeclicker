@@ -99,18 +99,18 @@ const SafariZones = function (region: GameConstants.Region): string {
 };
 
 const FarmWanderInfo = function (): string {
-    const result: (string[])[] = [];
+    const result: string[][] = [];
     const region = [
-        /*Kanto*/ [],
-        /*Jotho*/ [BerryType.Chople, BerryType.Kebia, BerryType.Shuca, BerryType.Charti, BerryType.Babiri, BerryType.Chilan, BerryType.Petaya], //#5484 -> []
-        /*Hoenn*/ [BerryType.Pinkan, BerryType.Kee, BerryType.Maranga, BerryType.Liechi, BerryType.Ganlon, BerryType.Salac, BerryType.Enigma],
-        /*Sinnoh*/ [BerryType.Apicot, BerryType.Lansat, BerryType.Snover],
-        /*Unova*/ [],
-        /*Kalos*/ [],
-        /*Alola*/ [],
-        /*Galar*/ [],
-        /*Hisui*/ [BerryType.Hopo],
-        /*Paldea*/ [],
+        /*Kanto*/   [],
+        /*Johto*/   [BerryType.Chople, BerryType.Kebia, BerryType.Shuca, BerryType.Charti, BerryType.Babiri, BerryType.Chilan, BerryType.Petaya], //#5484 -> []
+        /*Hoenn*/   [BerryType.Pinkan, BerryType.Kee, BerryType.Maranga, BerryType.Liechi, BerryType.Ganlon, BerryType.Salac, BerryType.Enigma],
+        /*Sinnoh*/  [BerryType.Apicot, BerryType.Lansat, BerryType.Snover],
+        /*Unova*/   [],
+        /*Kalos*/   [],
+        /*Alola*/   [],
+        /*Galar*/   [],
+        /*Hisui*/   [BerryType.Hopo],
+        /*Paldea*/  [],
     ];
 
     App.game.farming.berryData.forEach(v => !region.flat().includes(v.type) ? region[0].push(v.type) : null);
@@ -176,17 +176,14 @@ const EvoItems = function (): string {
 };
 
 const TypedEggInfo = function (): string {
-    const x =
-        [
-            App.game.breeding.hatchList[GameConstants.EggItemType.Mystery_egg],
-            App.game.breeding.hatchList[GameConstants.EggItemType.Fire_egg],
-            App.game.breeding.hatchList[GameConstants.EggItemType.Water_egg],
-            App.game.breeding.hatchList[GameConstants.EggItemType.Grass_egg],
-            App.game.breeding.hatchList[GameConstants.EggItemType.Fighting_egg],
-            App.game.breeding.hatchList[GameConstants.EggItemType.Electric_egg],
-            App.game.breeding.hatchList[GameConstants.EggItemType.Dragon_egg],
-        ].map(x => x.map(v => v.map(w => PokemonHelper.displayName(w))));
-    return JSON.stringify(x);
+    const eggs: PokemonNameType[][][] = [];
+    for (const EggItemType in GameConstants.EggItemType) {
+        if ( !isNaN(Number(EggItemType)) ) {
+            eggs.push(App.game.breeding.hatchList[EggItemType as unknown as GameConstants.EggItemType]);
+        }
+    }
+    const eggs2: string[][][] = eggs.map(x => x.map(v => v.map(w => PokemonHelper.displayName(w)())));
+    return JSON.stringify(eggs2);
 };
 
 const RemoveEvent = function (req: Requirement | undefined): boolean {
@@ -207,14 +204,20 @@ const RemoveEvent = function (req: Requirement | undefined): boolean {
 
 const RoutesInfo = function (region: GameConstants.Region): string {
     const result = Routes.getRoutesByRegion(region).sort((a, b) => a.number - b.number)
-        .map(x => [
-            x.routeName,
-            x.pokemon.land.concat(x.pokemon.water, x.pokemon.headbutt, ...x.pokemon.special.map(p => (!RemoveEvent(p.req) ? p.pokemon : []) ) ).map(v => PokemonHelper.displayName(v)),
+        .map((route: RegionRoute) => [
+            route.routeName,
+            route.pokemon.land
+                .concat(route.pokemon.water, route.pokemon.headbutt, ...route.pokemon.special.map(p => (!RemoveEvent(p.req) ? p.pokemon : []) ) )
+                .map(v => PokemonHelper.displayName(v)),
         ]);
     Routes.getRoutesByRegion(region).forEach(v => {
         v.pokemon.special.forEach(w => {
-            if ( !(w.req instanceof WeatherRequirement) && !(w.req instanceof SpecialEventRequirement) && !(w.req instanceof MoonCyclePhaseRequirement) ) {
-                console.log(`${v.routeName} - ${w.pokemon}`);
+            if (
+                !(w.req instanceof WeatherRequirement) &&
+                !(w.req instanceof SpecialEventRequirement) &&
+                !(w.req instanceof MoonCyclePhaseRequirement)
+            ) {
+                console.log(`${v.routeName} - ${w.pokemon} - ${w.req}`);
             }
         });
     });
@@ -225,11 +228,14 @@ const DungeonsInfo = function (region: GameConstants.Region): string {
     const result = GameConstants.RegionDungeons[region]
         .map(k => [
             k,
-            [dungeonList[k].enemyList, dungeonList[k].bossList].flat().filter(v => !(v instanceof DungeonTrainer))
+            [dungeonList[k].enemyList, dungeonList[k].bossList].flat()
+                .filter(v => !(v instanceof DungeonTrainer))
                 .map(v => v instanceof DungeonBossPokemon ? (!RemoveEvent(v.options?.requirement) ? v.name : []) : v).flat()
                 .map(v => v.hasOwnProperty('options') ? (!RemoveEvent((v as DetailedPokemon).options.requirement) ? (v as DetailedPokemon).pokemon : []) : v).flat()
                 .map(v => PokemonHelper.displayName(v as PokemonNameType)),
-            Object.entries(dungeonList[k].lootTable).map(([_, v]) => v).flat().filter(v => PokemonHelper.getPokemonByName(v.loot as PokemonNameType).id).map(v => !RemoveEvent(v.requirement) ? v.loot : []).flat(),
+            Object.entries(dungeonList[k].lootTable).map(([_, v]) => v).flat()
+                .filter(v => PokemonHelper.getPokemonByName(v.loot as PokemonNameType).id)
+                .map(v => !RemoveEvent(v.requirement) ? v.loot : []).flat(),
         ]);
     GameConstants.RegionDungeons[region].forEach(w => {
         dungeonList[w].bossList.forEach(v => {
@@ -405,9 +411,11 @@ const RouteAchieves = function () {
     const myself = player as Player;
     const cooldown = 1000;
     const highest = Math.max(...Routes.getRoutesByRegion(myself.region).map(v => v.orderNumber ?? 0));
+    const pokemonOnRoute = RouteHelper.getAvailablePokemonList(myself.route, myself.region, true)
+        .filter(w => App.game.party.caughtPokemon.filter(v => v.name === w)[0].pokerus != GameConstants.Pokerus.Uninfected);
     if (
         App.game.statistics.routeKills[myself.region][myself.route]() >= Math.max(...GameConstants.ACHIEVEMENT_DEFEAT_ROUTE_VALUES) &&
-        GameConstants.Pokerus.Resistant === RouteHelper.minPokerus(RouteHelper.getAvailablePokemonList(myself.route, myself.region, true).filter(w => App.game.party.caughtPokemon.filter(v => v.name === w)[0].pokerus != GameConstants.Pokerus.Uninfected)) &&
+        GameConstants.Pokerus.Resistant === RouteHelper.minPokerus(pokemonOnRoute) &&
         highest === Routes.getRoute(myself.region, myself.route).orderNumber
     ) {
         console.log('STOP - Route Achieves Finished');
@@ -415,7 +423,7 @@ const RouteAchieves = function () {
     }
     if (
         App.game.statistics.routeKills[myself.region][myself.route]() >= Math.max(...GameConstants.ACHIEVEMENT_DEFEAT_ROUTE_VALUES) &&
-        GameConstants.Pokerus.Resistant === RouteHelper.minPokerus(RouteHelper.getAvailablePokemonList(myself.route, myself.region, true).filter(w => App.game.party.caughtPokemon.filter(v => v.name === w)[0].pokerus != GameConstants.Pokerus.Uninfected)) &&
+        GameConstants.Pokerus.Resistant === RouteHelper.minPokerus(pokemonOnRoute) &&
         highest != Routes.getRoute(myself.region, myself.route).orderNumber
     ) {
         MapHelper.moveToRoute(Routes.unnormalizeRoute(Routes.normalizedNumber(myself.region, myself.route, false) + 1), myself.region);
