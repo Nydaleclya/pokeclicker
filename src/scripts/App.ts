@@ -229,7 +229,7 @@ const DungeonsInfo = function (region: GameConstants.Region): string {
                 .map(v => v instanceof DungeonBossPokemon ? (!RemoveEvent(v.options?.requirement) ? v.name : []) : v).flat()
                 .map(v => v.hasOwnProperty('options') ? (!RemoveEvent((v as DetailedPokemon).options.requirement) ? (v as DetailedPokemon).pokemon : []) : v).flat()
                 .map(v => PokemonHelper.displayName(v as PokemonNameType)),
-            Object.entries(dungeonList[k].lootTable).map(([_, v]) => v).flat().filter(v => pokemonMap[v.loot].id).map(v => !RemoveEvent(v.requirement) ? v.loot : []).flat(),
+            Object.entries(dungeonList[k].lootTable).map(([_, v]) => v).flat().filter(v => PokemonHelper.getPokemonByName(v.loot as PokemonNameType).id).map(v => !RemoveEvent(v.requirement) ? v.loot : []).flat(),
         ]);
     GameConstants.RegionDungeons[region].forEach(w => {
         dungeonList[w].bossList.forEach(v => {
