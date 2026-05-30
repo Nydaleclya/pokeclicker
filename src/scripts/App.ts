@@ -513,3 +513,14 @@ const BattleFrontierBot = function () {
     setTimeout(() => BattleFrontierBot(), cooldown);
     return;
 };
+
+const PokemonRequiredEverstone = function (list: string): string[] {
+    const x = list.split('\n').map(v => PokemonHelper.getPokemonByName(v as PokemonNameType));
+
+    const out = x.filter(poke =>
+        (poke.evolutions && poke.evolutions.some(k => k.trigger == EvoTrigger.LEVEL && !x.map(p => p.name).includes(k.evolvedPokemon) && !k.restrictions.some(r => r instanceof HoldingItemRequirement && r.option == 2))) ||
+        (pokemonBabyPrevolutionMap[poke.name] && !x.map(k => k.name).includes(pokemonBabyPrevolutionMap[poke.name]))
+    );
+
+    return out.map(p => p.name);
+};
