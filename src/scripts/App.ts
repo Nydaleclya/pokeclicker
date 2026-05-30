@@ -524,3 +524,26 @@ const PokemonRequiredEverstone = function (list: string): string[] {
 
     return out.map(p => p.name);
 };
+
+const PokemonNotAvailable = function (list: string): string[] {
+    const x = list.split('\n').map(v => PokemonHelper.getPokemonByName(v as PokemonNameType));
+
+    const out = x.filter(poke => {
+        const locations: Partial<Record<PokemonLocationType, Array<any>>> = PokemonLocations.getPokemonLocations(poke.name, GameConstants.Region.galar);
+        let isPossible = false;
+        if (    locations[PokemonLocationType.Route] ||
+                (locations[PokemonLocationType.Dungeon] && locations[PokemonLocationType.Dungeon].some(o => !o.requirements)) ||
+                (locations[PokemonLocationType.DungeonBoss] && locations[PokemonLocationType.DungeonBoss].some(o => !o.requirements)) ||
+                (locations[PokemonLocationType.DungeonChest] && locations[PokemonLocationType.DungeonChest].some(o => !o.requirements)) ||
+                (locations[PokemonLocationType.Roaming] && locations[PokemonLocationType.Roaming].some(o => !o.requirements)) ||
+                locations[PokemonLocationType.Egg] ||
+                locations[PokemonLocationType.Discord] ||
+                (locations[PokemonLocationType.Evolution] && locations[PokemonLocationType.Evolution].some((p: EvoData) => x.map(k => k.name).includes(p.basePokemon)))
+        ) {
+            isPossible = true;
+        }
+        return !isPossible;
+    });
+
+    return out.map(p => p.name);
+};
