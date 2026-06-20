@@ -120,7 +120,7 @@ const FarmWanderInfo = function (): string {
     [...new Set(temp.map(v => v[0] as PokemonNameType))]
         .map(v => [v, Math.max(Math.min(...temp.map(w => w[0] === v ? w[1] as number : -1).filter(j => j >= 0)), PokemonHelper.calcNativeRegion(v))])
         .sort((a, b) => (a[0] as string).localeCompare(b[0] as string))
-        .forEach(v => result[v[1] as number].push(PokemonHelper.displayName(v[0] as PokemonNameType)));
+        .forEach(v => result[v[1] as number].push(PokemonHelper.displayName(v[0] as PokemonNameType)()));
     return JSON.stringify(result);
 };
 
@@ -208,7 +208,7 @@ const RoutesInfo = function (region: GameConstants.Region): string {
             route.routeName,
             route.pokemon.land
                 .concat(route.pokemon.water, route.pokemon.headbutt, ...route.pokemon.special.map(p => (!RemoveEvent(p.req) ? p.pokemon : []) ) )
-                .map(v => PokemonHelper.displayName(v)),
+                .map(v => PokemonHelper.displayName(v)()),
         ]);
     Routes.getRoutesByRegion(region).forEach(v => {
         v.pokemon.special.forEach(w => {
@@ -232,7 +232,14 @@ const DungeonsInfo = function (region: GameConstants.Region): string {
                 .filter(v => !(v instanceof DungeonTrainer))
                 .map(v => v instanceof DungeonBossPokemon ? (!RemoveEvent(v.options?.requirement) ? v.name : []) : v).flat()
                 .map(v => v.hasOwnProperty('options') ? (!RemoveEvent((v as DetailedPokemon).options.requirement) ? (v as DetailedPokemon).pokemon : []) : v).flat()
-                .map(v => PokemonHelper.displayName(v as PokemonNameType)),
+                .map(v => PokemonHelper.displayName(v as PokemonNameType)())
+                .concat(
+                    dungeonList[k].bossList
+                        .filter(v => v instanceof DungeonTrainer)
+                        .map(v => (v as DungeonTrainer).team).flat()
+                        .filter(v => v.shadow == GameConstants.ShadowStatus.Shadow)
+                        .map(v => PokemonHelper.displayName(v.name)())
+                ),
             Object.entries(dungeonList[k].lootTable).map(([_, v]) => v).flat()
                 .filter(v => PokemonHelper.getPokemonByName(v.loot as PokemonNameType).id)
                 .map(v => !RemoveEvent(v.requirement) ? v.loot : []).flat(),
