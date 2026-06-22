@@ -183,6 +183,12 @@ const TypedEggInfo = function (): string {
         }
     }
     const eggs2: string[][][] = eggs.map(x => x.map(v => v.map(w => PokemonHelper.displayName(w)())));
+    const maxLength = GameConstants.Region.final;
+    for ( let i = 0; i < eggs.length; i++ ) {
+        while ( eggs[i].length < maxLength ) {
+            eggs[i].push([]);
+        }
+    }
     return JSON.stringify(eggs2);
 };
 
