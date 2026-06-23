@@ -121,7 +121,11 @@ const FarmWanderInfo = function (): string {
         .map(v => [v, Math.max(Math.min(...temp.map(w => w[0] === v ? w[1] as number : -1).filter(j => j >= 0)), PokemonHelper.calcNativeRegion(v))])
         .sort((a, b) => (a[0] as string).localeCompare(b[0] as string))
         .forEach(v => result[v[1] as number].push(PokemonHelper.displayName(v[0] as PokemonNameType)()));
-    return JSON.stringify(result);
+    const result2: string[] = [];
+    result.forEach(v => {
+        result2.push(v.join('↔'));
+    });
+    return result2.join('↕');
 };
 
 const EvoItems = function (): string {
@@ -172,24 +176,22 @@ const EvoItems = function (): string {
     const out: string[] = [];
     all.forEach(v => out.push(v.name));
 
-    return JSON.stringify(out);
+    return out.join('↔');
 };
 
 const TypedEggInfo = function (): string {
-    const eggs: PokemonNameType[][][] = [];
-    for (const EggItemType in GameConstants.EggItemType) {
-        if ( !isNaN(Number(EggItemType)) ) {
-            eggs.push(App.game.breeding.hatchList[EggItemType as unknown as GameConstants.EggItemType]);
-        }
-    }
-    const eggs2: string[][][] = eggs.map(x => x.map(v => v.map(w => PokemonHelper.displayName(w)())));
+    const eggsMain: string[] = [];
     const maxLength = GameConstants.Region.final;
-    for ( let i = 0; i < eggs.length; i++ ) {
-        while ( eggs[i].length < maxLength ) {
-            eggs[i].push([]);
+    for ( let i = 0; i < maxLength; i++ ) {
+        const eggs = [];
+        for (const EggItemType in GameConstants.EggItemType) {
+            if ( !isNaN(Number(EggItemType)) ) {
+                eggs.push((App.game.breeding.hatchList[EggItemType as unknown as GameConstants.EggItemType][i] ?? []).join('↔'));
+            }
         }
+        eggsMain.push(eggs.join('→'));
     }
-    return JSON.stringify(eggs2);
+    return eggsMain.join('↕');
 };
 
 const RemoveEvent = function (req: Requirement | undefined): boolean {
@@ -227,7 +229,13 @@ const RoutesInfo = function (region: GameConstants.Region): string {
             }
         });
     });
-    return JSON.stringify(result);
+    const result2: string[] = [];
+    result.forEach(v => {
+        const name = v[0];
+        const pokemon = (v[1] as string[]).join('↔');
+        result2.push(`${name}→${pokemon}`);
+    });
+    return result2.join('↕');
 };
 
 const DungeonsInfo = function (region: GameConstants.Region): string {
@@ -268,7 +276,14 @@ const DungeonsInfo = function (region: GameConstants.Region): string {
             }
         });
     });
-    return JSON.stringify(result);
+    const result2: string[] = [];
+    result.forEach(v => {
+        const name = v[0];
+        const pokemon = (v[1] as string[]).join('↔');
+        const mimics = (v[2] as string[]).join('↔');
+        result2.push(`${name}→${pokemon}→${mimics}`);
+    });
+    return result2.join('↕');
 };
 
 const OrderRequirements = function (req: Requirement, ending: boolean): string {
