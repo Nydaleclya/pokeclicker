@@ -291,7 +291,7 @@ const OrderRequirements = function (req: Requirement, ending: boolean): string {
     let temp = '';
 
     if ( req.option === GameConstants.AchievementOption.less ) {
-        console.log(req);
+        //console.log(req);
         if (
             req instanceof GymBadgeRequirement ||
             req instanceof QuestLineStepCompletedRequirement ||
@@ -317,28 +317,38 @@ const OrderRequirements = function (req: Requirement, ending: boolean): string {
         temp += `[Q] ${req.questLineName} END`;
     } else if ( req instanceof SpecialEventRequirement ) {
         temp += 'Event Calendar';
+    } else if ( req instanceof MaxRegionRequirement ) {
+        const regionText = GameConstants.Region[req.requiredValue];
+        const dockLocation = GameConstants.DockTowns[req.requiredValue];
+        temp += `[N] ${regionText.charAt(0).toUpperCase()}${regionText.slice(1)}`;
+        temp += '&&';
+        let reqArray = TownList[dockLocation].requirements.map(v => OrderRequirements(v, true));
+        reqArray = reqArray.filter(v => v);
+        temp += reqArray.join('&&');
     } else if ( req instanceof MultiRequirement ) {
-        temp += '(';
-        req.requirements.forEach((v, i) => {
-            temp += OrderRequirements(v, false);
-            if ( i + 1 < req.requirements.length ) {
-                temp += ' AND ';
-            }
-        });
-        temp += ')';
+        let reqArray = req.requirements.map(v => OrderRequirements(v, false));
+        reqArray = reqArray.filter(v => v);
+        if ( reqArray.length > 1 ) {
+            temp += '→';
+            temp += reqArray.join(' AND ');
+            temp += '←';
+        } else {
+            temp += reqArray.join(' AND ');
+        }
     } else if ( req instanceof OneFromManyRequirement ) {
-        temp += '(';
-        req.requirements.forEach((v, i) => {
-            temp += OrderRequirements(v, false);
-            if ( i + 1 < req.requirements.length ) {
-                temp += ' OR ';
-            }
-        });
-        temp += ')';
+        let reqArray = req.requirements.map(v => OrderRequirements(v, false));
+        reqArray = reqArray.filter(v => v);
+        if ( reqArray.length > 1 ) {
+            temp += '→';
+            temp += reqArray.join(' OR ');
+            temp += '←';
+        } else {
+            temp += reqArray.join(' OR ');
+        }
     } else if ( req instanceof CustomRequirement ) {
-        console.log('CustomRequirement');
-        console.log(req);
-        console.log('----------');
+        //console.log('CustomRequirement');
+        //console.log(req);
+        //console.log('----------');
     // These Requirements is only on stuff not yet intended to play with
     } else if ( req instanceof NullRequirement ) {
         temp += 'NULL';
@@ -357,14 +367,14 @@ const OrderRequirements = function (req: Requirement, ending: boolean): string {
         req instanceof ObtainedPokemonRequirement ||
         req instanceof ClearGymRequirement
     ) {} else {
-        console.log('Requirement not included');
-        console.log(req);
-        console.log('----------');
+        //console.log('Requirement not included');
+        //console.log(req);
+        //console.log('----------');
     }
 
 
     if ( ending ) {
-        temp += '|';
+        temp += '&&';
     }
     return temp;
 };
@@ -372,11 +382,16 @@ const OrderRequirements = function (req: Requirement, ending: boolean): string {
 const RouteOrder = function (region: GameConstants.Region): string {
     let temp = '';
     Routes.getRoutesByRegion(region).sort((a,b) => a.number - b.number).forEach(w => {
-        temp += `${w.routeName}|`;
+        let reqString = '';
+        temp += `${w.routeName}↔`;
         w.requirements.forEach(v => {
-            temp += OrderRequirements(v, true);
+            reqString += OrderRequirements(v, true);
         });
-        temp += '<<';
+        let reqArray = reqString.split('&&');
+        reqArray = RequirementArrayToDNF(reqArray);
+        reqString = reqArray.join(' AND ');
+        temp += reqString;
+        temp += '↕';
     });
     return temp;
 };
@@ -384,20 +399,25 @@ const RouteOrder = function (region: GameConstants.Region): string {
 const DungeonOrder = function (region: GameConstants.Region): string {
     let temp = '';
     GameConstants.RegionDungeons[region].forEach(w => {
-        temp += `${w}|`;
+        temp += `${w}↔`;
+        let reqString = '';
         if ( TownList[w].dungeon?.optionalParameters.requirement ) {
-            temp += OrderRequirements(TownList[w].dungeon.optionalParameters.requirement, true);
+            reqString += OrderRequirements(TownList[w].dungeon.optionalParameters.requirement, true);
         }
         TownList[w].requirements.forEach(v => {
-            temp += OrderRequirements(v, true);
+            reqString += OrderRequirements(v, true);
         });
         const rew = String(TownList[w].dungeon?.rewardFunction);
         if ( rew != '() => { }' ) {
             if ( rew.search('DungeonGainGymBadge') >= 0 ) {
-                temp += `${eval(`BadgeEnums[${rew.substring(rew.search('GymList')).replace(')','.badgeReward')}]`)} Badge|`;
+                reqString += `${eval(`BadgeEnums[${rew.substring(rew.search('GymList')).replace(')','.badgeReward')}]`)} Badge|`;
             }
         }
-        temp += '<<';
+        let reqArray = reqString.split('&&');
+        reqArray = RequirementArrayToDNF(reqArray);
+        reqString = reqArray.join(' AND ');
+        temp += reqString;
+        temp += '↕';
     });
     return temp;
 };
@@ -405,16 +425,21 @@ const DungeonOrder = function (region: GameConstants.Region): string {
 const BadgeOrder = function (): string {
     let temp = '';
     GameConstants.RegionGyms.flat().sort((a,b) => GymList[a].badgeReward - GymList[b].badgeReward).forEach(w => {
-        temp += `${BadgeEnums[GymList[w].badgeReward]} Badge|`;
+        temp += `${BadgeEnums[GymList[w].badgeReward]} Badge↔`;
+        let reqString = '';
         GymList[w].requirements.forEach(v => {
-            temp += OrderRequirements(v, true);
+            reqString += OrderRequirements(v, true);
         });
         if ( GymList[w].hasOwnProperty('parent') ) {
             GymList[w].parent.requirements.forEach(v => {
-                temp += OrderRequirements(v, true);
+                reqString += OrderRequirements(v, true);
             });
         }
-        temp += '<<';
+        let reqArray = reqString.split('&&');
+        reqArray = RequirementArrayToDNF(reqArray);
+        reqString = reqArray.join(' AND ');
+        temp += reqString;
+        temp += '↕';
     });
     return temp;
 };
@@ -423,16 +448,144 @@ const TemporaryBattleOrder = function (): string {
     let temp = '';
     Object.keys(TemporaryBattleList).forEach(w => {
         //console.log(TemporaryBattleList[w].name);
-        temp += `${TemporaryBattleList[w].name}|`;
+        temp += `${TemporaryBattleList[w].name}↔`;
+        let reqString = '';
         TemporaryBattleList[w].requirements.forEach(v => {
-            temp += OrderRequirements(v, true);
+            reqString += OrderRequirements(v, true);
         });
         TemporaryBattleList[w].parent?.requirements.forEach(v => {
-            temp += OrderRequirements(v, true);
+            reqString += OrderRequirements(v, true);
         });
-        temp += '<<';
+        let reqArray = reqString.split('&&');
+        reqArray = RequirementArrayToDNF(reqArray);
+        reqString = reqArray.join(' AND ');
+        temp += reqString;
+        temp += '↕';
     });
     return temp;
+};
+
+const RequirementArrayToDNF = function (req: Array<string>): Array<string> {
+    req = req.filter((val, i, arr) => arr.indexOf(val) === i);
+    req = req.filter(v => v);
+
+    if ( req.some(v => v.includes('→')) ) {
+        if ( req.every(v => v.split('OR').length == 1) ) {
+            req = req.map(v => v.replace(/^→/gm, '').replace(/←$/g,''));
+            req = req.map(v => v.split(' AND ')).flat();
+        } else if ( req.every(v => v.split('OR').length > 1) ) {
+            req = req.map(v => v.replace(/^→/gm, '').replace(/←$/g,''));
+        } else {
+            req = req.map(v => v.replace(/^→/gm, '').replace(/←$/g,''));
+            if ( req.every(v => !v.match(/→.*OR.*←/m))) {
+                let temp: string[][] = [[]];
+                for ( let i = 0; i < req.length; i++ ) {
+                    if ( req[i].split('OR').length == 1 ) {
+                        for ( let k = 0; k < temp.length; k++ ) {
+                            temp[k].push(req[i]);
+                        }
+                    } else {
+                        const helper = req[i].split(' OR ');
+                        const temp2 = temp;
+                        temp = [];
+                        for ( let k = 0; k < helper.length; k++ ) {
+                            for ( let j = 0; j < temp2.length; j++ ) {
+                                temp.push([...temp2[j], helper[k]]);
+                            }
+                        }
+                    }
+                }
+                temp = temp.map(v => RequirementArrayToDNF(v));
+                temp = temp.map(v => RequirementArrayToDNF(v));
+
+                for ( let i = 0; i < temp.length; i++ ) {
+                    for (let k = 0; k < temp.length; k++ ) {
+                        if ( i != k ) {
+                            if ( temp[i].every(v => temp[k].includes(v)) ) {
+                                temp[k] = [];
+                                temp = temp.filter(v => v.length);
+                                i = -1;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                for ( let i = 0; i < temp.length; i++ ) {
+                    for (let k = 0; k < temp.length; k++ ) {
+                        if ( i != k ) {
+                            if ( temp[i].length == temp[k].length ) {
+                                const keepA = temp[i].filter(v => !v.match(/\[Q\]/g)).sort();
+                                const keepB = temp[k].filter(v => !v.match(/\[Q\]/g)).sort();
+                                const everythingElse = keepA.every((v, i) => v == keepB[i]);
+                                if ( everythingElse ) {
+                                    const checkA = temp[i].filter(v => v.match(/\[Q\]/g)).sort();
+                                    const checkB = temp[k].filter(v => v.match(/\[Q\]/g)).sort();
+                                    if ( checkA.every((v, i) => QuestStepSmaller(v, checkB[i])) ) {
+                                        temp[k] = [];
+                                        temp = temp.filter(v => v.length);
+                                        i = -1;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                req = [temp.map(v => v.join(' AND ')).join(' OR ')];
+            }
+        }
+    } else if ( req.filter(v => v.match(/\[Q\]/g)).length > 1 ) {
+        const keep = req.filter(v => !v.match(/\[Q\]/g));
+        let toCheck: Array<string> = req.filter(v => v.match(/\[Q\]/g));
+        for ( let i = 0; i < toCheck.length; i++ ) {
+            for ( let k = 0; k < toCheck.length; k++ ) {
+                if ( i != k ) {
+                    if ( QuestStepBigger(toCheck[i], toCheck[k]) ) {
+                        toCheck[k] = '';
+                        toCheck = toCheck.filter(v => v);
+                        i = -1;
+                        break;
+                    }
+                }
+            }
+        }
+        req = [keep, toCheck].flat();
+    }
+    return req;
+};
+
+const QuestStepSmaller = function (a: string, b: string): boolean {
+    if ( a.split('START')[0].split('END')[0].split('Step')[0] != b.split('START')[0].split('END')[0].split('Step')[0]) {
+        return false;
+    }
+    if ( a.includes('START') ) {
+        return true;
+    }
+    if ( b.includes('END') ) {
+        return true;
+    }
+    if ( Number(a.split('Step')[1]) <= Number(b.split('Step')[1]) ) {
+        return true;
+    }
+    return false;
+};
+
+const QuestStepBigger = function (a: string, b: string): boolean {
+    if ( a.split('START')[0].split('END')[0].split('Step')[0] != b.split('START')[0].split('END')[0].split('Step')[0]) {
+        return false;
+    }
+    if ( a.includes('END') ) {
+        return true;
+    }
+    if ( b.includes('START') ) {
+        return true;
+    }
+    if ( Number(a.split('Step')[1]) >= Number(b.split('Step')[1]) ) {
+        return true;
+    }
+    return false;
 };
 
 const RouteAchieves = function () {
