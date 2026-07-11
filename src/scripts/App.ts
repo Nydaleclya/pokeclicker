@@ -475,6 +475,14 @@ const RequirementArrayToDNF = function (req: Array<string>): Array<string> {
             req = req.map(v => v.split(' AND ')).flat();
         } else if ( req.every(v => v.split('OR').length > 1) ) {
             req = req.map(v => v.replace(/^→/gm, '').replace(/←$/g,''));
+            const temp = req.map(v => v.split(' OR '));
+            for ( let i = 0; i < temp.length; i++ ) {
+                for ( let k = 0; k < temp[i].length; k++ ) {
+                    temp[i][k] = RequirementArrayToDNF([temp[i][k]]).join(' AND ');
+                }
+                temp[i] = [temp[i].join(' OR ')];
+            }
+            req = temp.flat();
         } else {
             req = req.map(v => v.replace(/^→/gm, '').replace(/←$/g,''));
             if ( req.every(v => !v.match(/→.*OR.*←/m))) {
