@@ -318,7 +318,9 @@ const OrderRequirements = function (req: Requirement, ending: boolean): string {
     } else if ( req instanceof SpecialEventRequirement ) {
         temp += 'Event Calendar';
     } else if ( req instanceof ObtainedPokemonRequirement ) {
-        temp += `Caught: ${req.pokemon}`;
+        const pokemon = req.pokemon;
+        const id = PokemonHelper.getPokemonByName(pokemon).id;
+        temp += `Caught: ${id} | ${pokemon}`;
     } else if ( req instanceof MaxRegionRequirement ) {
         const regionText = GameConstants.Region[req.requiredValue];
         const dockLocation = GameConstants.DockTowns[req.requiredValue];
