@@ -317,6 +317,8 @@ const OrderRequirements = function (req: Requirement, ending: boolean): string {
         temp += `[Q] ${req.questLineName} END`;
     } else if ( req instanceof SpecialEventRequirement ) {
         temp += 'Event Calendar';
+    } else if ( req instanceof ObtainedPokemonRequirement ) {
+        temp += `Caught: ${req.pokemon}`;
     } else if ( req instanceof MaxRegionRequirement ) {
         const regionText = GameConstants.Region[req.requiredValue];
         const dockLocation = GameConstants.DockTowns[req.requiredValue];
@@ -353,10 +355,10 @@ const OrderRequirements = function (req: Requirement, ending: boolean): string {
     } else if ( req instanceof NullRequirement ) {
         temp += 'NULL';
     } else if ( req instanceof DevelopmentRequirement ) {
+        temp += 'NULL';
         if ( req.requirement ) {
             temp += OrderRequirements(req.requirement, true);
         }
-        temp += 'NULL';
     // These Requirements are location independent and thus not needed to include.
     } else if (
         req instanceof WeatherRequirement ||
@@ -364,7 +366,6 @@ const OrderRequirements = function (req: Requirement, ending: boolean): string {
         req instanceof StatisticRequirement ||
         req instanceof DayCyclePartRequirement ||
         req instanceof ItemOwnedRequirement ||
-        req instanceof ObtainedPokemonRequirement ||
         req instanceof ClearGymRequirement
     ) {} else {
         //console.log('Requirement not included');
