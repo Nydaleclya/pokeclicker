@@ -320,7 +320,8 @@ const OrderRequirements = function (req: Requirement, ending: boolean): string {
     } else if ( req instanceof ObtainedPokemonRequirement ) {
         const pokemon = req.pokemon;
         const id = PokemonHelper.getPokemonByName(pokemon).id;
-        temp += `Caught: ${id} | ${pokemon}`;
+        const idText = Intl.NumberFormat('en-US', {'minimumIntegerDigits': 4, 'minimumFractionDigits': 2, 'useGrouping': false}).format(id);
+        temp += `Caught: ${idText} | ${pokemon}`;
     } else if ( req instanceof MaxRegionRequirement ) {
         const regionText = GameConstants.Region[req.requiredValue];
         const dockLocation = GameConstants.DockTowns[req.requiredValue];
