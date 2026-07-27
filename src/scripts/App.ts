@@ -452,19 +452,21 @@ const TemporaryBattleOrder = function (): string {
     let temp = '';
     Object.keys(TemporaryBattleList).forEach(w => {
         //console.log(TemporaryBattleList[w].name);
-        temp += `${TemporaryBattleList[w].name}↔`;
-        let reqString = '';
-        TemporaryBattleList[w].requirements.forEach(v => {
-            reqString += OrderRequirements(v, true);
-        });
-        TemporaryBattleList[w].parent?.requirements.forEach(v => {
-            reqString += OrderRequirements(v, true);
-        });
-        let reqArray = reqString.split('&&');
-        reqArray = RequirementArrayToDNF(reqArray);
-        reqString = reqArray.join(' AND ');
-        temp += reqString;
-        temp += '↕';
+        if ( TemporaryBattleList[w].optionalArgs.resetDaily ) {} else {
+            temp += `${TemporaryBattleList[w].name}↔`;
+            let reqString = '';
+            TemporaryBattleList[w].requirements.forEach(v => {
+                reqString += OrderRequirements(v, true);
+            });
+            TemporaryBattleList[w].parent?.requirements.forEach(v => {
+                reqString += OrderRequirements(v, true);
+            });
+            let reqArray = reqString.split('&&');
+            reqArray = RequirementArrayToDNF(reqArray);
+            reqString = reqArray.join(' AND ');
+            temp += reqString;
+            temp += '↕';
+        }
     });
     return temp;
 };
