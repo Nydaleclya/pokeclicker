@@ -233,6 +233,11 @@ import areaStatus from './enums/AreaStatus';
 import TranslationHelper from './translation/TranslationHelper';
 import * as DownloadUtil from './utilities/DownloadUtil';
 import HoldingItemRequirement from './requirements/HoldingItemRequirement';
+import LazyRequirementWrapper from './requirements/LazyRequirementWrapper';
+import InEnvironmentRequirement from './requirements/InEnvironmentRequirement';
+import GameStateRequirement from './requirements/GameStateRequirement';
+import InDungeonRequirement from './requirements/InDungeonRequirement';
+import GemDeal from './gems/GemDeal';
 
 Object.assign(<any>window, {
     SaveSelector,
@@ -481,4 +486,9 @@ Object.assign(<any>window, {
     TranslationHelper,
     DownloadUtil,
     HoldingItemRequirement,
+    LazyRequirementWrapper,
+    InEnvironmentRequirement,
+    GameStateRequirement,
+    InDungeonRequirement,
+    GemDeal,
 });
