@@ -1246,23 +1246,27 @@ const RouteAchieves = function () {
     const myself = player as Player;
     const cooldown = 1000;
     const highest = Math.max(...Routes.getRoutesByRegion(myself.region).map(v => v.orderNumber ?? 0));
+    const killsRequired = Math.max(...GameConstants.ACHIEVEMENT_DEFEAT_ROUTE_VALUES);
+    /*
+    if ( myself.region === GameConstants.Region.galar && myself.subregion === GameConstants.GalarSubRegions.Lental ) {
+        killsRequired = Math.max(...GameConstants.ResearchLevel);
+    }
+    */
     const pokemonOnRoute = RouteHelper.getAvailablePokemonList(myself.route, myself.region, true)
         .filter(w => App.game.party.caughtPokemon.filter(v => v.name === w)[0].pokerus != GameConstants.Pokerus.Uninfected);
-    if (
-        App.game.statistics.routeKills[myself.region][myself.route]() >= Math.max(...GameConstants.ACHIEVEMENT_DEFEAT_ROUTE_VALUES) &&
-        GameConstants.Pokerus.Resistant === RouteHelper.minPokerus(pokemonOnRoute) &&
-        highest === Routes.getRoute(myself.region, myself.route).orderNumber
-    ) {
+
+    const testKills = App.game.statistics.routeKills[myself.region][myself.route]() >= killsRequired;
+    const testPokerus = GameConstants.Pokerus.Resistant === RouteHelper.minPokerus(pokemonOnRoute);
+    const testHighest = highest === Routes.getRoute(myself.region, myself.route).orderNumber;
+
+    if ( testKills && testPokerus && testHighest ) {
         console.log('STOP - Route Achieves Finished');
         return;
     }
-    if (
-        App.game.statistics.routeKills[myself.region][myself.route]() >= Math.max(...GameConstants.ACHIEVEMENT_DEFEAT_ROUTE_VALUES) &&
-        GameConstants.Pokerus.Resistant === RouteHelper.minPokerus(pokemonOnRoute) &&
-        highest != Routes.getRoute(myself.region, myself.route).orderNumber
-    ) {
+    if ( testKills && testPokerus && !testHighest ) {
         MapHelper.moveToRoute(Routes.unnormalizeRoute(Routes.normalizedNumber(myself.region, myself.route, false) + 1), myself.region);
     }
+
     setTimeout(() => RouteAchieves(), cooldown);
     return;
 };
