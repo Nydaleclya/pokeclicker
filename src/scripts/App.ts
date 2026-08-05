@@ -1353,36 +1353,350 @@ const BattleFrontierBot = function () {
     return;
 };
 
-const PokemonRequiredEverstone = function (list: string): string[] {
-    const x = list.split('\n').map(v => PokemonHelper.getPokemonByName(v as PokemonNameType));
+const PokemonRequiredEverstone = function (type: PokemonType): string[] {
+    const list = (pokemonList as Array<PokemonListData>)
+        .filter(pokemon => pokemon.type.includes(type))
+        .map(pokemon => PokemonHelper.getPokemonByName(pokemon.name));
 
-    const out = x.filter(poke =>
-        (poke.evolutions && poke.evolutions.some(k => k.trigger == EvoTrigger.LEVEL && !x.map(p => p.name).includes(k.evolvedPokemon) && !k.restrictions.some(r => r instanceof HoldingItemRequirement && r.option == 2))) ||
-        (pokemonBabyPrevolutionMap[poke.name] && !x.map(k => k.name).includes(pokemonBabyPrevolutionMap[poke.name]))
+    const out = list.filter(poke =>
+        (poke.evolutions && poke.evolutions.some(k => k.trigger == EvoTrigger.LEVEL && !list.map(p => p.name).includes(k.evolvedPokemon) && !k.restrictions.some(r => r instanceof HoldingItemRequirement && r.option == 2))) ||
+        (pokemonBabyPrevolutionMap[poke.name] && !list.map(k => k.name).includes(pokemonBabyPrevolutionMap[poke.name]))
     );
 
     return out.map(p => p.name);
 };
 
-const PokemonNotAvailable = function (list: string): string[] {
-    const x = list.split('\n').map(v => PokemonHelper.getPokemonByName(v as PokemonNameType));
+const PokemonNotAvailableFilter = function (pokemon: PokemonListData, included: PokemonNameType[] = [], includedTypes: PokemonType[] = [], cache: string[] = []): {0: boolean, 1: string[]} {
+    const locations: Partial<Record<PokemonLocationType, Array<any>>> = PokemonLocations.getPokemonLocations(pokemon.name, GameConstants.MAX_AVAILABLE_REGION);
+    let isPossible = false;
+    let test;
+    if (    locations[PokemonLocationType.Route] ||
+            locations[PokemonLocationType.Egg] ||
+            locations[PokemonLocationType.Discord] ||
+            (locations[PokemonLocationType.Evolution] && locations[PokemonLocationType.Evolution].some((p: EvoData) => included.includes(p.basePokemon))) ||
+            (locations[PokemonLocationType.Baby] && locations[PokemonLocationType.Baby].some(parent => included.includes(parent))) ||
+            (locations[PokemonLocationType.Dungeon] && locations[PokemonLocationType.Dungeon].some(o => {
+                test = RequirementTrivial(o.requirements, included, includedTypes, cache);
+                cache = [cache, test[1]].flat().filter((ele, idx, arr) => arr.indexOf(ele) === idx);
+                return test[0];
+            })) ||
+            (locations[PokemonLocationType.DungeonBoss] && locations[PokemonLocationType.DungeonBoss].some(o => {
+                test = RequirementTrivial(o.requirements, included, includedTypes, cache);
+                cache = [cache, test[1]].flat().filter((ele, idx, arr) => arr.indexOf(ele) === idx);
+                return test[0];
+            })) ||
+            (locations[PokemonLocationType.DungeonChest] && locations[PokemonLocationType.DungeonChest].some(o => {
+                test = RequirementTrivial(o.requirements, included, includedTypes, cache);
+                cache = [cache, test[1]].flat().filter((ele, idx, arr) => arr.indexOf(ele) === idx);
+                return test[0];
+            })) ||
+            (locations[PokemonLocationType.Roaming] && locations[PokemonLocationType.Roaming].some(o => {
+                test = RequirementTrivial(o.requirements, included, includedTypes, cache);
+                cache = [cache, test[1]].flat().filter((ele, idx, arr) => arr.indexOf(ele) === idx);
+                return test[0];
+            }))
+    ) {
+        isPossible = true;
+    }
+    return {0: isPossible, 1: cache};
+};
 
-    const out = x.filter(poke => {
-        const locations: Partial<Record<PokemonLocationType, Array<any>>> = PokemonLocations.getPokemonLocations(poke.name, GameConstants.Region.galar);
+const PokemonNotAvailable = function (type: PokemonType | PokemonType[]): string[] {
+    const typeList = [type].flat();
+    const list = (pokemonList as Array<PokemonListData>)
+        .filter(pokemon => pokemon.type.some(t => typeList.includes(t)));
+
+    const included: PokemonNameType[] = [];
+    const includedTypes: Set<PokemonType> = new Set([...typeList]);
+    let cache: string[] = [];
+
+    const out = list.filter(pokemon => {
         let isPossible = false;
-        if (    locations[PokemonLocationType.Route] ||
-                (locations[PokemonLocationType.Dungeon] && locations[PokemonLocationType.Dungeon].some(o => !o.requirements)) ||
-                (locations[PokemonLocationType.DungeonBoss] && locations[PokemonLocationType.DungeonBoss].some(o => !o.requirements)) ||
-                (locations[PokemonLocationType.DungeonChest] && locations[PokemonLocationType.DungeonChest].some(o => !o.requirements)) ||
-                (locations[PokemonLocationType.Roaming] && locations[PokemonLocationType.Roaming].some(o => !o.requirements)) ||
-                locations[PokemonLocationType.Egg] ||
-                locations[PokemonLocationType.Discord] ||
-                (locations[PokemonLocationType.Evolution] && locations[PokemonLocationType.Evolution].some((p: EvoData) => x.map(k => k.name).includes(p.basePokemon)))
-        ) {
+        const test = PokemonNotAvailableFilter(pokemon, included, [...includedTypes], cache);
+        cache = [cache, test[1]].flat().filter((ele, idx, arr) => arr.indexOf(ele) === idx);
+        if ( test[0] ) {
+            included.push(pokemon.name);
+            pokemon.type.forEach(v => includedTypes.add(v));
             isPossible = true;
         }
         return !isPossible;
     });
 
     return out.map(p => p.name);
+};
+
+const QuestLinePokemonForced2Catch = function (): Record<QuestLineNameType, Partial<Record<number, Array<PokemonNameType | PokemonType>>>> {
+    const list = Object.fromEntries(App.game.quests.questLines().map(q => [q.name, {}])) as Record<QuestLineNameType, Partial<Record<number, Array<PokemonNameType | PokemonType>>>>;
+    list['Tutorial Quests'][6] = ['Pidgey'];
+    list['Bill\'s Grandpa Treasure Hunt'][1] = ['Jigglypuff', PokemonType.Normal];
+    list['Bill\'s Grandpa Treasure Hunt'][3] = ['Oddish', PokemonType.Grass];
+    list['Bill\'s Grandpa Treasure Hunt'][5] = ['Staryu', PokemonType.Water];
+    list['Bill\'s Grandpa Treasure Hunt'][7] = ['Growlithe', PokemonType.Fire];
+    list['Bill\'s Grandpa Treasure Hunt'][9] = ['Pikachu', PokemonType.Electric];
+    list['Bill\'s Grandpa Treasure Hunt'][12] = ['Eevee'];
+    list['The Legendary Beasts'][4] = ['Raikou', 'Entei', 'Suicune'];
+    list['Eusine\'s Chase'][11] = ['Suicune'];
+    list['Whirl Guardian'][10] = ['Lugia'];
+    list['Rainbow Guardian'][2] = ['Ho-Oh'];
+    list['Unfinished Business'][13] = ['Celebi'];
+    list['The Weather Trio'][6] = ['Rayquaza', 'Kyogre', 'Groudon'];
+    list['The Eon Duo'][4] = ['Latias', 'Latios'];
+    list['The Three Golems'][9] = ['Regirock', 'Regice', 'Registeel'];
+    list['Wish Maker'][4] = ['Absol'];
+    list['Wish Maker'][9] = ['Jirachi'];
+    list['A Meta Discovery'][1] = ['Electrode'];
+    list['A Meta Discovery'][2] = ['Groudon'];
+    list['A Meta Discovery'][4] = ['Meta Groudon'];
+    list['Zero\'s Ambition'][14] = ['Giratina (Altered)'];
+    list['Swords of Justice'][22] = ['Cobalion', 'Terrakion', 'Virizion'];
+    list['The Legend Awakened'][8] = ['Genesect'];
+    list['The Delta Episode'][28] = ['Rayquaza'];
+    list['The Delta Episode'][30] = ['Mega Rayquaza'];
+    list['The Great Vivillon Hunt!'][0] = [PokemonType.Water];
+    list['The Great Vivillon Hunt!'][1] = ['Vivillon (Marine)'];
+    list['The Great Vivillon Hunt!'][2] = [PokemonType.Psychic];
+    list['The Great Vivillon Hunt!'][3] = ['Vivillon (Modern)'];
+    list['The Great Vivillon Hunt!'][4] = [PokemonType.Poison];
+    list['The Great Vivillon Hunt!'][5] = ['Vivillon (Jungle)'];
+    list['The Great Vivillon Hunt!'][6] = [PokemonType.Dark];
+    list['The Great Vivillon Hunt!'][7] = ['Vivillon (Monsoon)'];
+    list['The Great Vivillon Hunt!'][8] = [PokemonType.Steel];
+    list['The Great Vivillon Hunt!'][9] = ['Vivillon (Tundra)'];
+    list['The Great Vivillon Hunt!'][10] = [PokemonType.Fire];
+    list['The Great Vivillon Hunt!'][11] = ['Vivillon (Sun)'];
+    list['The Great Vivillon Hunt!'][12] = [PokemonType.Fighting];
+    list['The Great Vivillon Hunt!'][13] = ['Vivillon (Archipelago)'];
+    list['The Great Vivillon Hunt!'][14] = [PokemonType.Ghost];
+    list['The Great Vivillon Hunt!'][15] = ['Vivillon (Elegant)'];
+    list['The Great Vivillon Hunt!'][16] = [PokemonType.Fairy];
+    list['The Great Vivillon Hunt!'][17] = ['Vivillon (Ocean)'];
+    list['The Great Vivillon Hunt!'][18] = [PokemonType.Electric];
+    list['The Great Vivillon Hunt!'][19] = ['Vivillon (Continental)'];
+    list['The Great Vivillon Hunt!'][20] = [PokemonType.Bug];
+    list['The Great Vivillon Hunt!'][21] = ['Vivillon (River)'];
+    list['The Great Vivillon Hunt!'][22] = [PokemonType.Flying];
+    list['The Great Vivillon Hunt!'][23] = ['Vivillon (Polar)'];
+    list['The Great Vivillon Hunt!'][24] = [PokemonType.Ground];
+    list['The Great Vivillon Hunt!'][25] = ['Vivillon (Sandstorm)'];
+    list['The Great Vivillon Hunt!'][26] = [PokemonType.Grass];
+    list['The Great Vivillon Hunt!'][27] = ['Vivillon (Garden)'];
+    list['The Great Vivillon Hunt!'][28] = [PokemonType.Rock];
+    list['The Great Vivillon Hunt!'][29] = ['Vivillon (High Plains)'];
+    list['The Great Vivillon Hunt!'][30] = [PokemonType.Dragon];
+    list['The Great Vivillon Hunt!'][31] = ['Vivillon (Savanna)'];
+    list['The Great Vivillon Hunt!'][32] = [PokemonType.Ice];
+    list['The Great Vivillon Hunt!'][33] = ['Vivillon (Icy Snow)'];
+    list['The Great Vivillon Hunt!'][34] = [PokemonType.Normal];
+    list['The Great Vivillon Hunt!'][35] = ['Vivillon (Poké Ball)'];
+    list['Princess Diancie'][0] = [PokemonType.Fairy];
+    list['Princess Diancie'][8] = ['Diancie'];
+    list['Clash of Ages'][0] = ['Hoopa'];
+    list['Clash of Ages'][4] = [PokemonType.Psychic];
+    list['Clash of Ages'][6] = ['Hoopa'];
+    list['Clash of Ages'][13] = ['Hoopa (Unbound)'];
+    list['Ultra Beast Hunt'][4] = ['Nihilego'];
+    list['Ultra Beast Hunt'][6] = ['Buzzwole', 'Pheromosa'];
+    list['Ultra Beast Hunt'][10] = ['Xurkitree'];
+    list['Ultra Beast Hunt'][12] = ['Kartana', 'Celesteela'];
+    list['Ultra Beast Hunt'][16] = ['Blacephalon', 'Stakataka'];
+    list['Ultra Beast Hunt'][18] = ['Guzzlord'];
+    list['Let\'s Go, Meltan!'][2] = ['Ditto'];
+    list['Let\'s Go, Meltan!'][3] = [PokemonType.Steel, PokemonType.Electric];
+    list['Let\'s Go, Meltan!'][4] = ['Alolan Grimer', 'Slugma', 'Gulpin'];
+    list['Let\'s Go, Meltan!'][6] = ['Magnemite', 'Exeggcute'];
+    list['Let\'s Go, Meltan!'][7] = ['Drowzee', 'Cubone', 'Scyther'];
+    list['Let\'s Go, Meltan!'][8] = ['Kabuto', 'Omanyte'];
+    list['Let\'s Go, Meltan!'][9] = ['Anorith', 'Lileep', 'Aerodactyl'];
+    list['Let\'s Go, Meltan!'][10] = ['Meltan', 'Melmetal'];
+    list['Dr. Splash\'s Research Project'][3] = ['Spoink', 'Voltorb'];
+    list['Dr. Splash\'s Research Project'][5] = ['Dwebble', 'Boldore', 'Forretress', 'Golem', 'Steelix'];
+    list['Dr. Splash\'s Research Project'][8] = ['Magikarp Saucy Blue'];
+    list['Sword and Shield'][19] = ['Zacian (Battle Hero)', 'Zamazenta (Battle Hero)'];
+    list['The Dojo\'s Armor'][3] = ['Galarian Slowpoke'];
+    list['The Dojo\'s Armor'][12] = ['Kubfu'];
+    list['The Dojo\'s Armor'][16] = [PokemonType.Dark, PokemonType.Water];
+    list['The Dojo\'s Armor'][17] = ['Urshifu (Single Strike)', 'Urshifu (Rapid Strike)'];
+    list['Secrets of the Jungle'][2] = ['Zarude'];
+    list['The Crown of Galar'][7] = ['Spectrier', 'Glastrier'];
+    list['The Crown of Galar'][9] = ['Calyrex'];
+    list['The Birds of the Dyna Tree'][6] = ['Galarian Articuno', 'Galarian Zapdos', 'Galarian Moltres'];
+    list['The Ancient Golems'][5] = ['Regirock', 'Regice', 'Registeel'];
+    list['The Ancient Golems'][7] = ['Regigigas'];
+    list['The Ancient Golems'][9] = ['Regieleki', 'Regidrago'];
+    list['How blu mouse?'][0] = ['Marill'];
+    list['Mystery of Deoxys'][2] = [PokemonType.Psychic];
+    list['Recover the Precious Egg!'][2] = [PokemonType.Water];
+    list['Recover the Precious Egg!'][24] = [PokemonType.Fighting];
+    list['Recover the Precious Egg!'][25] = ['Manaphy'];
+    list['An Unrivaled Power'][1] = [PokemonType.Psychic, PokemonType.Fighting];
+    list['Typing some Memories'][1] = [PokemonType.Fighting, PokemonType.Rock, PokemonType.Dark, PokemonType.Fairy];
+    list['Typing some Memories'][4] = [PokemonType.Water, PokemonType.Grass, PokemonType.Fire, PokemonType.Electric, PokemonType.Ground, PokemonType.Ice];
+    list['Typing some Memories'][18] = [PokemonType.Bug, PokemonType.Flying, PokemonType.Poison, PokemonType.Ghost, PokemonType.Psychic, PokemonType.Steel, PokemonType.Dragon];
+    list['Detective Pikachu'][17] = ['Detective Raichu'];
+    return list;
+};
+
+const QuestIndexHelper = function (input: number | (() => number)): number {
+    if ( typeof input === 'function' ) {
+        return input();
+    } else {
+        return input;
+    }
+};
+
+const RequirementTrivial = function (req: Requirement | undefined, includedPokemon: PokemonNameType[], includedTypes: PokemonType[], cache?: string[]): {0: boolean, 1: string[]} {
+    cache = cache ?? [];
+    if ( req === undefined ) {
+        return {0: true, 1: cache};
+    }
+    if ( req.option === GameConstants.AchievementOption.less ) {
+        // console.log('Option: Less');
+        // console.log(req.constructor);
+        // console.log(req);
+        return {0: true, 1: cache};
+    }
+    const bulletinBoardTown: Record<GameConstants.BulletinBoards, Town> = {
+        [GameConstants.BulletinBoards.None]: TownList['Pallet Town'],
+        [GameConstants.BulletinBoards.All]: TownList['Pallet Town'],
+        [GameConstants.BulletinBoards.Kanto]: TownList['Pallet Town'],
+        [GameConstants.BulletinBoards.Johto]: TownList['New Bark Town'],
+        [GameConstants.BulletinBoards.Hoenn]: TownList['Littleroot Town'],
+        [GameConstants.BulletinBoards.Sevii4567]: TownList['Pummelo Island'],
+        [GameConstants.BulletinBoards.Sinnoh]: TownList['Twinleaf Town'],
+        [GameConstants.BulletinBoards.Unova]: TownList['Aspertia City'],
+        [GameConstants.BulletinBoards.Kalos]: TownList['Vaniville Town'],
+        [GameConstants.BulletinBoards.Alola]: TownList['Professor Kukui\'s Lab'],
+        [GameConstants.BulletinBoards.Hoppy]: TownList['Hoppy Town'],
+        [GameConstants.BulletinBoards.Galar]: TownList.Postwick,
+        [GameConstants.BulletinBoards.Armor]: TownList['Master Dojo'],
+        [GameConstants.BulletinBoards.Crown]: TownList.Freezington,
+        [GameConstants.BulletinBoards.Hisui]: TownList['Galaxy Hall'],
+        [GameConstants.BulletinBoards.Arceus]: TownList['Galaxy Hall'],
+        [GameConstants.BulletinBoards.Paldea]: TownList['Cabo Poco'],
+    };
+    let test1: boolean, test2: boolean, questLineName: QuestLineNameType, questLine: QuestLine, townName: string;
+    switch ( req.constructor ) {
+        case MultiRequirement:
+            return {0: (req as MultiRequirement).requirements.every(v => RequirementTrivial(v, includedPokemon, includedTypes, cache)[0]), 1: cache};
+        case OneFromManyRequirement:
+            return {0: (req as OneFromManyRequirement).requirements.some(v => RequirementTrivial(v, includedPokemon, includedTypes, cache)[0]), 1: cache};
+        case ObtainedPokemonRequirement:
+            return {0: includedPokemon.includes((req as ObtainedPokemonRequirement).pokemon), 1: cache};
+        case RouteKillRequirement:
+            const route = Routes.getRoute((req as RouteKillRequirement).region, (req as RouteKillRequirement).route);
+            if ( cache.includes(route.routeName) ) {
+                return {0: true, 1: cache};
+            }
+            test1 = route.requirements.every(v => RequirementTrivial(v, includedPokemon, includedTypes, cache)[0]);
+            if ( test1 ) {
+                cache.push(route.routeName);
+            }
+            return {0: test1, 1: cache};
+        case ClearDungeonRequirement:
+            const dungeonName = GameConstants.RegionDungeons.flat()[(req as ClearDungeonRequirement).dungeonIndex];
+            if ( cache.includes(`Dungeon: ${dungeonName}`) && cache.includes(`Town: ${dungeonName}`) ) {
+                return {0: true, 1: cache};
+            }
+            test1 = RequirementTrivial(dungeonList[dungeonName].optionalParameters.requirement, includedPokemon, includedTypes, cache)[0];
+            if ( test1 ) {
+                cache.push(`Dungeon: ${dungeonName}`);
+            }
+
+            test2 = TownList[dungeonName].requirements.every(v => RequirementTrivial(v, includedPokemon, includedTypes, cache)[0]);
+            if ( test2 ) {
+                cache.push(`Town: ${dungeonName}`);
+            }
+            return {0: test1 && test2, 1: cache};
+        case GymBadgeRequirement:
+            const gymName = Object.keys(GymList).filter(town => GymList[town].badgeReward === (req as GymBadgeRequirement).badge)[0];
+            townName = Object.keys(TownList).filter(town => TownList[town].content.filter(v => v instanceof Gym).length)
+                .filter(town => TownList[town].content.filter(gym => (gym as Gym).badgeReward === (req as GymBadgeRequirement).badge))[0];
+            if ( cache.includes(`Gym: ${gymName}`) && cache.includes(`Town: ${townName}`) ) {
+                return {0: true, 1: cache};
+            }
+            test1 = GymList[gymName].requirements.every(v => RequirementTrivial(v, includedPokemon, includedTypes, cache)[0]);
+            if ( test1 ) {
+                cache.push(`Gym: ${gymName}`);
+            }
+
+            test2 = TownList[townName].requirements.every(v => RequirementTrivial(v, includedPokemon, includedTypes, cache)[0]);
+            if ( test2 ) {
+                cache.push(`Town: ${townName}`);
+            }
+            return {0: test1 && test2, 1: cache};
+        case TemporaryBattleRequirement:
+            const tempBattle = TemporaryBattleList[(req as TemporaryBattleRequirement).battleName];
+            townName = tempBattle.getTown()?.name ?? '';
+            if ( cache.includes(`TempBattle: ${tempBattle.name}`) && cache.includes(`Town: ${townName}`) ) {
+                return {0: true, 1: cache};
+            }
+            test1 = tempBattle.requirements.every(v => RequirementTrivial(v, includedPokemon, includedTypes, cache)[0]);
+            if ( test1 ) {
+                cache.push(`TempBattle: ${tempBattle.name}`);
+            }
+
+            test2 = (tempBattle.getTown() ? (tempBattle.getTown() as Town).requirements.every(v => RequirementTrivial(v, includedPokemon, includedTypes, cache)[0]) : true);
+            if ( test2 ) {
+                cache.push(`Town: ${townName}`);
+            }
+            return {0: test1 && test2, 1: cache};
+        case QuestLineStartedRequirement:
+            questLineName = (req as QuestLineStartedRequirement).questLineName;
+            questLine = App.game.quests.questLines().filter(q => q.name === questLineName)[0];
+            const town = bulletinBoardTown[questLine.bulletinBoard];
+            if ( cache.includes(`${questLineName} START`) && cache.includes(`Town: ${town.name}`) ) {
+                return {0: true, 1: cache};
+            }
+            test1 = RequirementTrivial(questLine.requirement, includedPokemon, includedTypes, cache)[0];
+            if ( test1 ) {
+                cache.push(`${questLineName} START`);
+            }
+
+            test2 = town.requirements.every(v => RequirementTrivial(v, includedPokemon, includedTypes, cache)[0]);
+            if ( test2 ) {
+                cache.push(`Town: ${town.name}`);
+            }
+            return {0: test1 && test2, 1: cache};
+        case QuestLineStepCompletedRequirement:
+            const step = QuestIndexHelper((req as QuestLineStepCompletedRequirement).questIndex);
+            questLineName = (req as QuestLineStepCompletedRequirement).questLineName;
+            if ( cache.includes(`${questLineName} Step ${step}`) ) {
+                return {0: true, 1: cache};
+            }
+            test1 = step > 0 ?
+                RequirementTrivial(new QuestLineStepCompletedRequirement(questLineName, step - 1), includedPokemon, includedTypes, cache)[0] :
+                RequirementTrivial(new QuestLineStartedRequirement(questLineName), includedPokemon, includedTypes, cache)[0];
+            test2 = (QuestLinePokemonForced2Catch()[questLineName][step] ?? []).every(v => {
+                if ( typeof v === 'string' ) {
+                    return includedPokemon.includes(v);
+                } else {
+                    return includedTypes.includes(v);
+                }
+            });
+            if ( test1 && test2 ) {
+                cache.push(`${questLineName} Step ${step}`);
+            }
+            return {0: test1 && test2, 1: cache};
+        case QuestLineCompletedRequirement:
+            questLineName = (req as QuestLineCompletedRequirement).questLineName;
+            questLine = App.game.quests.questLines().filter(q => q.name === questLineName)[0];
+            if ( cache.includes(`${questLineName} END`) ) {
+                return {0: true, 1: cache};
+            }
+            test1 = RequirementTrivial(new QuestLineStepCompletedRequirement(questLineName, questLine.totalQuests - 1), includedPokemon, includedTypes, cache)[0];
+            if ( test1 ) {
+                cache.push(`${questLineName} END`);
+            }
+            return {0: test1, 1: cache};
+        case SpecialEventRequirement:
+        case DayOfWeekRequirement:
+        case PokemonDefeatedSelectNRequirement:
+        case MoonCyclePhaseRequirement:
+            return {0: true, 1: cache};
+        default:
+            console.log('Not Implemented');
+            console.log(req.constructor);
+            console.log(req);
+            return {0: false, 1: cache};
+    }
 };
