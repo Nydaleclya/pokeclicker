@@ -1532,11 +1532,7 @@ const QuestLinePokemonForced2Catch = function (): Record<QuestLineNameType, Part
 };
 
 const QuestIndexHelper = function (input: number | (() => number)): number {
-    if ( typeof input === 'function' ) {
-        return input();
-    } else {
-        return input;
-    }
+    return typeof input === 'function' ? input() : input;
 };
 
 const RequirementTrivial = function (req: Requirement | undefined, includedPokemon: PokemonNameType[], includedTypes: PokemonType[], cache?: string[]): {0: boolean, 1: string[]} {
