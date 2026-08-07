@@ -606,6 +606,16 @@ const TemporaryBattleOrder = function (): string {
     return temp;
 };
 
+const safariTownsGlobal = function (): Partial<Record<GameConstants.Region, Town>> {
+    return {
+        [GameConstants.Region.kanto]: TownList['Safari Zone'],
+        [GameConstants.Region.johto]: TownList['National Park'],
+        [GameConstants.Region.sinnoh]: TownList['Great Marsh'],
+        [GameConstants.Region.kalos]: TownList['Friend Safari'],
+        [GameConstants.Region.alola]: TownList['Hoppy Town Fishing Pond'],
+    };
+};
+
 const PokemonOrder = function (filterID?: number): string[] {
     let temp = '';
     const list = pokemonList as Array<PokemonListData>;
@@ -760,13 +770,7 @@ const PokemonOrder = function (filterID?: number): string[] {
 
         // Safari
         const safariChance = PokemonLocations.getPokemonSafariChance(pokemonName);
-        const safariTowns: Partial<Record<GameConstants.Region, Town>> = {
-            [GameConstants.Region.kanto]: TownList['Safari Zone'],
-            [GameConstants.Region.johto]: TownList['National Park'],
-            [GameConstants.Region.sinnoh]: TownList['Great Marsh'],
-            [GameConstants.Region.kalos]: TownList['Friend Safari'],
-            [GameConstants.Region.alola]: TownList['Hoppy Town Fishing Pond'],
-        };
+        const safariTowns = safariTownsGlobal();
 
         const safaris: GameConstants.Region[] = Object.keys(safariChance).map(v => Number(v));
         if (safaris.length) {
@@ -1367,7 +1371,7 @@ const PokemonRequiredEverstone = function (type: PokemonType): string[] {
 };
 
 const PokemonNotAvailableFilter = function (pokemon: PokemonListData, included: PokemonNameType[] = [], includedTypes: PokemonType[] = [], cache: string[] = []): {0: boolean, 1: string[]} {
-    const locations: Partial<Record<PokemonLocationType, {[name: string]: Array<object>}|Array<any>>> = PokemonLocations.getPokemonLocations(pokemon.name, GameConstants.MAX_AVAILABLE_REGION);
+    const locations: Partial<Record<PokemonLocationType, {[name: string]: Array<object>}|Array<any>|Record<GameConstants.Region, Record<number, number>>>> = PokemonLocations.getPokemonLocations(pokemon.name, GameConstants.MAX_AVAILABLE_REGION);
     let isPossible = false;
     let test;
     isPossible = isPossible || (locations[PokemonLocationType.Egg] ? true : false);
@@ -1376,20 +1380,46 @@ const PokemonNotAvailableFilter = function (pokemon: PokemonListData, included: 
     isPossible = isPossible || ((locations[PokemonLocationType.Evolution] && (locations[PokemonLocationType.Evolution] as Array<EvoData>).some(p => included.includes(p.basePokemon))) ?? false);
     isPossible = isPossible || ((locations[PokemonLocationType.Baby] && (locations[PokemonLocationType.Baby] as Array<PokemonNameType>).some(parent => included.includes(parent))) ?? false);
 
-    [PokemonLocationType.Dungeon, PokemonLocationType.DungeonBoss, PokemonLocationType.DungeonChest, PokemonLocationType.Roaming].forEach(location => {
-        isPossible = isPossible || ((locations[location] && (locations[location] as Array<any>).some(o => {
-            test = RequirementTrivial(o.requirements, included, includedTypes, cache);
-            cache = [cache, test[1]].flat().filter((ele, idx, arr) => arr.indexOf(ele) === idx);
-            return test[0];
-        })) ?? false);
-    });
-
     isPossible = isPossible || ((locations[PokemonLocationType.Route] && Object.keys(locations[PokemonLocationType.Route]).some(region => {
         return locations[PokemonLocationType.Route] && (locations[PokemonLocationType.Route] as {[name: string]: Array<{requirements?: Requirement}>})[region].some(data => {
             test = RequirementTrivial(data.requirements, included, includedTypes, cache);
             cache = [cache, test[1]].flat().filter((ele, idx, arr) => arr.indexOf(ele) === idx);
             return test[0];
         });
+    })) ?? false);
+    isPossible = isPossible || ((locations[PokemonLocationType.Dungeon] && (locations[PokemonLocationType.Dungeon] as Array<any>).some(o => {
+        test = RequirementTrivial(o.requirements, included, includedTypes, cache);
+        cache = [cache, test[1]].flat().filter((ele, idx, arr) => arr.indexOf(ele) === idx);
+        return test[0];
+    })) ?? false);
+    isPossible = isPossible || ((locations[PokemonLocationType.DungeonBoss] && (locations[PokemonLocationType.DungeonBoss] as Array<any>).some(o => {
+        test = RequirementTrivial(o.requirements, included, includedTypes, cache);
+        cache = [cache, test[1]].flat().filter((ele, idx, arr) => arr.indexOf(ele) === idx);
+        return test[0];
+    })) ?? false);
+    isPossible = isPossible || ((locations[PokemonLocationType.DungeonChest] && (locations[PokemonLocationType.DungeonChest] as Array<any>).some(o => {
+        test = RequirementTrivial(o.requirements, included, includedTypes, cache);
+        cache = [cache, test[1]].flat().filter((ele, idx, arr) => arr.indexOf(ele) === idx);
+        return test[0];
+    })) ?? false);
+    isPossible = isPossible || ((locations[PokemonLocationType.Roaming] && (locations[PokemonLocationType.Roaming] as Array<any>).some(o => {
+        test = RequirementTrivial(o.requirements, included, includedTypes, cache);
+        cache = [cache, test[1]].flat().filter((ele, idx, arr) => arr.indexOf(ele) === idx);
+        return test[0];
+    })) ?? false);
+    isPossible = isPossible || ((locations[PokemonLocationType.Safari] && Object.keys(locations[PokemonLocationType.Safari] as Record<GameConstants.Region, Record<number, number>>).some(region => {
+        const encounters = SafariPokemonList.list[<GameConstants.Region><unknown>region]().filter(encounter => encounter.name === pokemon.name);
+        const testEncounter = encounters.some(encounter => {
+            test = RequirementTrivial(encounter.requirement, included, includedTypes, cache);
+            cache = [cache, test[1]].flat().filter((ele, idx, arr) => arr.indexOf(ele) === idx);
+            return test[0];
+        });
+        const testTown = safariTownsGlobal()[<GameConstants.Region><unknown>region]?.requirements.every(req => {
+            test = RequirementTrivial(req, included, includedTypes, cache);
+            cache = [cache, test[1]].flat().filter((ele, idx, arr) => arr.indexOf(ele) === idx);
+            return test[0];
+        });
+        return testEncounter && testTown;
     })) ?? false);
 
     return {0: isPossible, 1: cache};
@@ -1565,7 +1595,7 @@ const RequirementTrivial = function (req: Requirement | undefined, includedPokem
         [GameConstants.BulletinBoards.Arceus]: TownList['Galaxy Hall'],
         [GameConstants.BulletinBoards.Paldea]: TownList['Cabo Poco'],
     };
-    let test1: boolean, test2: boolean, questLineName: QuestLineNameType, questLine: QuestLine, townName: string;
+    let test1: boolean, test2: boolean, questLineName: QuestLineNameType, questLine: QuestLine, townName: string, town: Town;
     switch ( req.constructor ) {
         case MultiRequirement:
             return {0: (req as MultiRequirement).requirements.every(v => RequirementTrivial(v, includedPokemon, includedTypes, cache)[0]), 1: cache};
@@ -1601,7 +1631,7 @@ const RequirementTrivial = function (req: Requirement | undefined, includedPokem
         case GymBadgeRequirement:
             const gymName = Object.keys(GymList).filter(town => GymList[town].badgeReward === (req as GymBadgeRequirement).badge)[0];
             townName = Object.keys(TownList).filter(town => TownList[town].content.filter(v => v instanceof Gym).length)
-                .filter(town => TownList[town].content.filter(gym => (gym as Gym).badgeReward === (req as GymBadgeRequirement).badge))[0];
+                .filter(town => TownList[town].content.filter(gym => (gym as Gym).badgeReward === (req as GymBadgeRequirement).badge).length)[0];
             if ( cache.includes(`Gym: ${gymName}`) && cache.includes(`Town: ${townName}`) ) {
                 return {0: true, 1: cache};
             }
@@ -1617,8 +1647,8 @@ const RequirementTrivial = function (req: Requirement | undefined, includedPokem
             return {0: test1 && test2, 1: cache};
         case TemporaryBattleRequirement:
             const tempBattle = TemporaryBattleList[(req as TemporaryBattleRequirement).battleName];
-            townName = tempBattle.getTown()?.name ?? '';
-            if ( cache.includes(`TempBattle: ${tempBattle.name}`) && cache.includes(`Town: ${townName}`) ) {
+            town = tempBattle.parent;
+            if ( cache.includes(`TempBattle: ${tempBattle.name}`) && (town && cache.includes(`Town: ${town.name}`)) ) {
                 return {0: true, 1: cache};
             }
             test1 = tempBattle.requirements.every(v => RequirementTrivial(v, includedPokemon, includedTypes, cache)[0]);
@@ -1626,15 +1656,15 @@ const RequirementTrivial = function (req: Requirement | undefined, includedPokem
                 cache.push(`TempBattle: ${tempBattle.name}`);
             }
 
-            test2 = (tempBattle.getTown() ? (tempBattle.getTown() as Town).requirements.every(v => RequirementTrivial(v, includedPokemon, includedTypes, cache)[0]) : true);
-            if ( test2 ) {
-                cache.push(`Town: ${townName}`);
+            test2 = (town ? town.requirements.every(v => RequirementTrivial(v, includedPokemon, includedTypes, cache)[0]) : true);
+            if ( test2 && town ) {
+                cache.push(`Town: ${town.name}`);
             }
             return {0: test1 && test2, 1: cache};
         case QuestLineStartedRequirement:
             questLineName = (req as QuestLineStartedRequirement).questLineName;
             questLine = App.game.quests.questLines().filter(q => q.name === questLineName)[0];
-            const town = bulletinBoardTown[questLine.bulletinBoard];
+            town = bulletinBoardTown[questLine.bulletinBoard];
             if ( cache.includes(`${questLineName} START`) && cache.includes(`Town: ${town.name}`) ) {
                 return {0: true, 1: cache};
             }
