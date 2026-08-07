@@ -1367,43 +1367,38 @@ const PokemonRequiredEverstone = function (type: PokemonType): string[] {
 };
 
 const PokemonNotAvailableFilter = function (pokemon: PokemonListData, included: PokemonNameType[] = [], includedTypes: PokemonType[] = [], cache: string[] = []): {0: boolean, 1: string[]} {
-    const locations: Partial<Record<PokemonLocationType, Array<any>>> = PokemonLocations.getPokemonLocations(pokemon.name, GameConstants.MAX_AVAILABLE_REGION);
+    const locations: Partial<Record<PokemonLocationType, {[name: string]: Array<object>}|Array<any>>> = PokemonLocations.getPokemonLocations(pokemon.name, GameConstants.MAX_AVAILABLE_REGION);
     let isPossible = false;
     let test;
-    if (    locations[PokemonLocationType.Route] ||
-            locations[PokemonLocationType.Egg] ||
-            locations[PokemonLocationType.Discord] ||
-            (locations[PokemonLocationType.Evolution] && locations[PokemonLocationType.Evolution].some((p: EvoData) => included.includes(p.basePokemon))) ||
-            (locations[PokemonLocationType.Baby] && locations[PokemonLocationType.Baby].some(parent => included.includes(parent))) ||
-            (locations[PokemonLocationType.Dungeon] && locations[PokemonLocationType.Dungeon].some(o => {
-                test = RequirementTrivial(o.requirements, included, includedTypes, cache);
-                cache = [cache, test[1]].flat().filter((ele, idx, arr) => arr.indexOf(ele) === idx);
-                return test[0];
-            })) ||
-            (locations[PokemonLocationType.DungeonBoss] && locations[PokemonLocationType.DungeonBoss].some(o => {
-                test = RequirementTrivial(o.requirements, included, includedTypes, cache);
-                cache = [cache, test[1]].flat().filter((ele, idx, arr) => arr.indexOf(ele) === idx);
-                return test[0];
-            })) ||
-            (locations[PokemonLocationType.DungeonChest] && locations[PokemonLocationType.DungeonChest].some(o => {
-                test = RequirementTrivial(o.requirements, included, includedTypes, cache);
-                cache = [cache, test[1]].flat().filter((ele, idx, arr) => arr.indexOf(ele) === idx);
-                return test[0];
-            })) ||
-            (locations[PokemonLocationType.Roaming] && locations[PokemonLocationType.Roaming].some(o => {
-                test = RequirementTrivial(o.requirements, included, includedTypes, cache);
-                cache = [cache, test[1]].flat().filter((ele, idx, arr) => arr.indexOf(ele) === idx);
-                return test[0];
-            }))
-    ) {
-        isPossible = true;
-    }
+    isPossible = isPossible || (locations[PokemonLocationType.Egg] ? true : false);
+    isPossible = isPossible || (locations[PokemonLocationType.Discord] ? true : false);
+    isPossible = isPossible || (locations[PokemonLocationType.Wandering] ? true : false);
+    isPossible = isPossible || ((locations[PokemonLocationType.Evolution] && (locations[PokemonLocationType.Evolution] as Array<EvoData>).some(p => included.includes(p.basePokemon))) ?? false);
+    isPossible = isPossible || ((locations[PokemonLocationType.Baby] && (locations[PokemonLocationType.Baby] as Array<PokemonNameType>).some(parent => included.includes(parent))) ?? false);
+
+    [PokemonLocationType.Dungeon, PokemonLocationType.DungeonBoss, PokemonLocationType.DungeonChest, PokemonLocationType.Roaming].forEach(location => {
+        isPossible = isPossible || ((locations[location] && (locations[location] as Array<any>).some(o => {
+            test = RequirementTrivial(o.requirements, included, includedTypes, cache);
+            cache = [cache, test[1]].flat().filter((ele, idx, arr) => arr.indexOf(ele) === idx);
+            return test[0];
+        })) ?? false);
+    });
+
+    isPossible = isPossible || ((locations[PokemonLocationType.Route] && Object.keys(locations[PokemonLocationType.Route]).some(region => {
+        return locations[PokemonLocationType.Route] && (locations[PokemonLocationType.Route] as {[name: string]: Array<{requirements?: Requirement}>})[region].some(data => {
+            test = RequirementTrivial(data.requirements, included, includedTypes, cache);
+            cache = [cache, test[1]].flat().filter((ele, idx, arr) => arr.indexOf(ele) === idx);
+            return test[0];
+        });
+    })) ?? false);
+
     return {0: isPossible, 1: cache};
 };
 
 const PokemonNotAvailable = function (type: PokemonType | PokemonType[]): string[] {
     const typeList = [type].flat();
     const list = (pokemonList as Array<PokemonListData>)
+        .filter(pokemon => pokemon.nativeRegion <= GameConstants.MAX_AVAILABLE_REGION)
         .filter(pokemon => pokemon.type.some(t => typeList.includes(t)));
 
     const included: PokemonNameType[] = [];
@@ -1689,6 +1684,8 @@ const RequirementTrivial = function (req: Requirement | undefined, includedPokem
             }
             return {0: test1, 1: cache};
         case SpecialEventRequirement:
+        case SpecialEventRandomRequirement:
+        case WeatherRequirement:
         case DayOfWeekRequirement:
         case PokemonDefeatedSelectNRequirement:
         case MoonCyclePhaseRequirement:
