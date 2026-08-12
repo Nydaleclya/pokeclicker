@@ -403,18 +403,18 @@ const OrderRequirements = function (req: Requirement, ending: boolean): string {
                     PokemonLocations.getPokemonLocations(possiblePokemon[k][1] as PokemonNameType, i);
                 if (
                     Object.keys(locations[PokemonLocationType.Route] ?? {}).length ||
+                    (locations[PokemonLocationType.Roaming] as object[] ?? []).length ||
                     (locations[PokemonLocationType.Dungeon] as object[] ?? []).length ||
                     (locations[PokemonLocationType.DungeonBoss] as object[] ?? []).length ||
                     (locations[PokemonLocationType.DungeonChest] as object[] ?? []).length ||
-                    (locations[PokemonLocationType.ShadowPokemon] as object[] ?? []).length ||
-                    (locations[PokemonLocationType.Egg] as object[] ?? []).length ||
-                    (locations[PokemonLocationType.Shop] as object[] ?? []).length ||
-                    (locations[PokemonLocationType.Roaming] as object[] ?? []).length ||
-                    (locations[PokemonLocationType.Baby] as object[] ?? []).length ||
                     (locations[PokemonLocationType.Evolution] as object[] ?? []).length ||
+                    (locations[PokemonLocationType.Egg] as object[] ?? []).length ||
+                    (locations[PokemonLocationType.Baby] as object[] ?? []).length ||
+                    (locations[PokemonLocationType.Shop] as object[] ?? []).length ||
                     (locations[PokemonLocationType.Wandering] as object[] ?? []).length ||
                     (locations[PokemonLocationType.Trade] as object[] ?? []).length ||
                     (locations[PokemonLocationType.GiftNPC] as object[] ?? []).length ||
+                    (locations[PokemonLocationType.ShadowPokemon] as object[] ?? []).length ||
                     (locations[PokemonLocationType.DreamOrb] as object[] ?? []).length ||
                     Object.keys(locations[PokemonLocationType.BattleCafe] ?? {}).length ||
                     Object.keys(locations[PokemonLocationType.SafariItem] ?? {}).length
