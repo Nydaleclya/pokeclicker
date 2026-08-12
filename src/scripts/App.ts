@@ -652,6 +652,24 @@ const PokemonOrder = function (filterID?: number): string[] {
             }
         }
 
+        // Roaming
+        const roaming = <Array<{region: number, requirements?: Requirement, roamingGroup: any}>>PokemonLocations.getPokemonRoamingRegions(pokemonName, maxRegion);
+        if (roaming.length) {
+            for ( let k = 0; k < roaming.length; k++ ) {
+                const obj = roaming[k];
+                const regionText = GameConstants.Region[obj.region];
+                let reqString = '';
+                if ( obj.requirements instanceof Requirement ) {
+                    reqString = OrderRequirements(obj.requirements, true);
+                }
+                reqString += obj.region > GameConstants.Region.kanto ? `[N] ${regionText.charAt(0).toUpperCase()}${regionText.slice(1)}` : 'TRUE';
+                let reqArray = reqString.split('&&');
+                reqArray = RequirementArrayToDNF(reqArray);
+                reqString = reqArray.join(' AND ');
+                locationArray.push(reqString);
+            }
+        }
+
         // Dungeon
         const dungeons = <Array<{dungeon: string, requirements?: Requirement}>>PokemonLocations.getPokemonDungeons(pokemonName, maxRegion);
         if (dungeons.length) {
@@ -703,9 +721,21 @@ const PokemonOrder = function (filterID?: number): string[] {
             }
         }
 
-        // Shadow Pokemon
-        const shadowPokemon = PokemonLocations.getShadowPokemonDungeons(pokemonName, maxRegion);
-        locationArray.push(...shadowPokemon);
+        // Evolution
+        const evolutions = PokemonLocations.getPokemonPrevolution(pokemonName, maxRegion);
+        if (evolutions.length) {
+            for ( let k = 0; k < evolutions.length; k++ ) {
+                const obj = evolutions[k];
+                let reqString = '';
+                for ( let i = 0; i < obj.restrictions.length; i++ ) {
+                    reqString += OrderRequirements(obj.restrictions[i], true);
+                }
+                let reqArray = reqString.split('&&');
+                reqArray = RequirementArrayToDNF(reqArray);
+                reqString = reqArray.join(' AND ');
+                locationArray.push(reqString);
+            }
+        }
 
         // Eggs
         const eggs = PokemonLocations.getPokemonEggs(pokemonName, maxRegion);
@@ -714,6 +744,15 @@ const PokemonOrder = function (filterID?: number): string[] {
                 .map(v => `Typed Eggs: ${GameConstants.humanifyString(v)}`)
                 .map(v => filtered[idx].nativeRegion > GameConstants.Region.kanto ?
                     `${v} AND [N] ${nativeRegionText.charAt(0).toUpperCase()}${nativeRegionText.slice(1)}` : v)
+            );
+        }
+
+        // Baby
+        const parents = PokemonLocations.getPokemonParents(pokemonName, maxRegion);
+        if (parents.length) {
+            locationArray.push(...parents
+                .map(pokemon => `Caught: ${PersonalNumberFormat.format(PokemonHelper.getPokemonByName(<PokemonNameType>pokemon).id)} | ${pokemon}`)
+                .map(v => filtered[idx].nativeRegion > 0 ? `${v} AND [N] ${nativeRegionText.charAt(0).toUpperCase()}${nativeRegionText.slice(1)}` : v)
             );
         }
 
@@ -741,33 +780,6 @@ const PokemonOrder = function (filterID?: number): string[] {
             }
         }
 
-        // Roaming
-        const roaming = <Array<{region: number, requirements?: Requirement, roamingGroup: any}>>PokemonLocations.getPokemonRoamingRegions(pokemonName, maxRegion);
-        if (roaming.length) {
-            for ( let k = 0; k < roaming.length; k++ ) {
-                const obj = roaming[k];
-                const regionText = GameConstants.Region[obj.region];
-                let reqString = '';
-                if ( obj.requirements instanceof Requirement ) {
-                    reqString = OrderRequirements(obj.requirements, true);
-                }
-                reqString += obj.region > GameConstants.Region.kanto ? `[N] ${regionText.charAt(0).toUpperCase()}${regionText.slice(1)}` : 'TRUE';
-                let reqArray = reqString.split('&&');
-                reqArray = RequirementArrayToDNF(reqArray);
-                reqString = reqArray.join(' AND ');
-                locationArray.push(reqString);
-            }
-        }
-
-        // Baby
-        const parents = PokemonLocations.getPokemonParents(pokemonName, maxRegion);
-        if (parents.length) {
-            locationArray.push(...parents
-                .map(pokemon => `Caught: ${PersonalNumberFormat.format(PokemonHelper.getPokemonByName(<PokemonNameType>pokemon).id)} | ${pokemon}`)
-                .map(v => filtered[idx].nativeRegion > 0 ? `${v} AND [N] ${nativeRegionText.charAt(0).toUpperCase()}${nativeRegionText.slice(1)}` : v)
-            );
-        }
-
         // Safari
         const safariChance = PokemonLocations.getPokemonSafariChance(pokemonName);
         const safariTowns = safariTownsGlobal();
@@ -788,22 +800,6 @@ const PokemonOrder = function (filterID?: number): string[] {
                 // Require Safari Ticket
                 if ( region == GameConstants.Region.kanto ) {
                     reqString += 'Key Item: Safari Ticket&&';
-                }
-                let reqArray = reqString.split('&&');
-                reqArray = RequirementArrayToDNF(reqArray);
-                reqString = reqArray.join(' AND ');
-                locationArray.push(reqString);
-            }
-        }
-
-        // Evolution
-        const evolutions = PokemonLocations.getPokemonPrevolution(pokemonName, maxRegion);
-        if (evolutions.length) {
-            for ( let k = 0; k < evolutions.length; k++ ) {
-                const obj = evolutions[k];
-                let reqString = '';
-                for ( let i = 0; i < obj.restrictions.length; i++ ) {
-                    reqString += OrderRequirements(obj.restrictions[i], true);
                 }
                 let reqArray = reqString.split('&&');
                 reqArray = RequirementArrayToDNF(reqArray);
@@ -874,6 +870,39 @@ const PokemonOrder = function (filterID?: number): string[] {
             locationArray.push(reqString);
         }
 
+        // Quest Line reward
+        const questLineReward = PokemonLocations.getPokemonQuestLineReward(pokemonName);
+        if (questLineReward.length) {
+            const pokemonRewardRegex = /gainPokemonByName\('(.+?)'/g;
+            const questList = App.game.quests.questLines()
+                .filter(questLine => questLineReward.includes(questLine.name))
+                .flatMap(questLine => {
+                    const questIndex = questLine.quests().map(quest => {
+                        const rewards = [];
+                        let match;
+                        while ((match = pokemonRewardRegex.exec(quest.customReward?.toString() as string)) != null) {
+                            // match[1] is the contents of the capture group, e.g. "Eevee"
+                            rewards.push(match[1]);
+                        }
+                        return rewards.includes(pokemonName) ? quest.index : -Infinity;
+                    }).filter(v => v > -Infinity);
+                    return questIndex.map(v => `[Q] ${questLine.name} Step ${v - 1}`);
+                });
+
+            let reqString = '';
+            if ( questList.length > 1 ) {
+                reqString += '→';
+                reqString += questList.join(' OR ');
+                reqString += '←';
+            } else {
+                reqString += questList.join(' OR ');
+            }
+            let reqArray = reqString.split('&&');
+            reqArray = RequirementArrayToDNF(reqArray);
+            reqString = reqArray.join(' AND ');
+            locationArray.push(reqString);
+        }
+
         // Temp battle reward
         const tempBattle = PokemonLocations.getPokemonTempBattleReward(pokemonName);
         if (tempBattle.length) {
@@ -921,39 +950,6 @@ const PokemonOrder = function (filterID?: number): string[] {
                 reqString += '←';
             } else {
                 reqString += dungeonReward.join(' OR ');
-            }
-            let reqArray = reqString.split('&&');
-            reqArray = RequirementArrayToDNF(reqArray);
-            reqString = reqArray.join(' AND ');
-            locationArray.push(reqString);
-        }
-
-        // Quest Line reward
-        const questLineReward = PokemonLocations.getPokemonQuestLineReward(pokemonName);
-        if (questLineReward.length) {
-            const pokemonRewardRegex = /gainPokemonByName\('(.+?)'/g;
-            const questList = App.game.quests.questLines()
-                .filter(questLine => questLineReward.includes(questLine.name))
-                .flatMap(questLine => {
-                    const questIndex = questLine.quests().map(quest => {
-                        const rewards = [];
-                        let match;
-                        while ((match = pokemonRewardRegex.exec(quest.customReward?.toString() as string)) != null) {
-                            // match[1] is the contents of the capture group, e.g. "Eevee"
-                            rewards.push(match[1]);
-                        }
-                        return rewards.includes(pokemonName) ? quest.index : -Infinity;
-                    }).filter(v => v > -Infinity);
-                    return questIndex.map(v => `[Q] ${questLine.name} Step ${v - 1}`);
-                });
-
-            let reqString = '';
-            if ( questList.length > 1 ) {
-                reqString += '→';
-                reqString += questList.join(' OR ');
-                reqString += '←';
-            } else {
-                reqString += questList.join(' OR ');
             }
             let reqArray = reqString.split('&&');
             reqArray = RequirementArrayToDNF(reqArray);
@@ -1042,6 +1038,10 @@ const PokemonOrder = function (filterID?: number): string[] {
                 locationArray.push(reqString);
             }
         }
+
+        // Shadow Pokemon
+        const shadowPokemon = PokemonLocations.getShadowPokemonDungeons(pokemonName, maxRegion);
+        locationArray.push(...shadowPokemon);
 
         // Dream Orbs
         const dreamOrbs = PokemonLocations.getPokemonDreamOrbs(pokemonName, maxRegion);
