@@ -100,7 +100,7 @@ const SafariZones = function (region: GameConstants.Region): string {
 
 const BerryRegionLocked = [
     /*Kanto*/   [],
-    /*Johto*/   [BerryType.Chople, BerryType.Kebia, BerryType.Shuca, BerryType.Charti, BerryType.Babiri, BerryType.Chilan, BerryType.Petaya], //#5484 -> []
+    /*Johto*/   [],
     /*Hoenn*/   [BerryType.Pinkan, BerryType.Kee, BerryType.Maranga, BerryType.Liechi, BerryType.Ganlon, BerryType.Salac, BerryType.Enigma],
     /*Sinnoh*/  [BerryType.Apicot, BerryType.Lansat, BerryType.Snover],
     /*Unova*/   [],
