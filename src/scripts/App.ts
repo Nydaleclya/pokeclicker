@@ -225,7 +225,8 @@ const RoutesInfo = function (region: GameConstants.Region): string {
             if (
                 !(w.req instanceof WeatherRequirement) &&
                 !(w.req instanceof SpecialEventRequirement) &&
-                !(w.req instanceof MoonCyclePhaseRequirement)
+                !(w.req instanceof MoonCyclePhaseRequirement) &&
+                !(w.req instanceof DayOfWeekRequirement)
             ) {
                 console.log(`${v.routeName} - ${w.pokemon} - ${w.req}`);
             }
