@@ -5,7 +5,7 @@ export default class Trainer {
 
     constructor(
         public trainerClass: string,
-        private team: GymPokemon[],
+        public team: GymPokemon[],
         name?: string,
         public subTrainerClass?: string,
     ) {

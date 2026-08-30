@@ -6,7 +6,8 @@ const FarmHandSkills = [
 ];
 
 enum FarmHandSpeeds {
-    Fastest,
+    UltraFast = -4,
+    Fastest = 0,
     Faster,
     Fast,
     AboveAverage,
@@ -101,6 +102,7 @@ class FarmHand {
         speed = ((speed + 1) * 0.03) + 1;
         let time = Math.pow(GameConstants.MINUTE, speed);
         time -= time > 5 * GameConstants.MINUTE ? time % GameConstants.MINUTE : time % (30 * GameConstants.SECOND);
+        if ( time == 0 ) time = GameConstants.SECOND;
         return time;
     }
 
@@ -196,7 +198,7 @@ class FarmHand {
         if (this.shouldHarvest()) {
             let readyPlotIndex;
             do {
-                readyPlotIndex = App.game.farming.plotList.findIndex((p, i) => p.isUnlocked && p.berry !== BerryType.None && p.stage() >= PlotStage.Berry && this.plots().includes(i) && !p.isSafeLocked);
+                readyPlotIndex = App.game.farming.plotList.findIndex((p, i) => p.isUnlocked && p.berry !== BerryType.None && p.stage() >= PlotStage.Berry && this.plots().includes(i) && !p.isSafeLocked && p.age >= p.berryData.growthTime[4] - 300);
                 if (readyPlotIndex >= 0 && workTimes > 0) {
                     const berry = App.game.farming.plotList[readyPlotIndex].berry;
                     App.game.farming.harvest(readyPlotIndex);
@@ -393,6 +395,12 @@ class FarmHands {
         });
     }
 }
+
+// Personal Farm Hands Start
+FarmHands.add(new FarmHand('Starf', 100, 50, FarmHandSpeeds.UltraFast, 10, -12, new BerriesUnlockedRequirement(8)));
+FarmHands.add(new FarmHand('Lum', 100, 50, FarmHandSpeeds.UltraFast, 10, -12, new BerriesUnlockedRequirement(8)));
+FarmHands.add(new FarmHand('Chople', 100, 50, FarmHandSpeeds.UltraFast, 10, -12, new BerriesUnlockedRequirement(8)));
+// Personal Farm Hands End
 
 // Note: Gender-neutral names used as the trainer sprite is (seeded) randomly generated
 FarmHands.add(new FarmHand('Alex', 10, 1, FarmHandSpeeds.Lazy, 1, 1, new TotalBerriesUnlockedRequirement(8)));

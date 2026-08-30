@@ -8,7 +8,7 @@ export default class QuestLineCompletedRequirement extends AchievementRequiremen
         return App.game.quests.getQuestLine(this.questLineName);
     }
 
-    constructor(private questLineName: QuestLineNameType, option = AchievementOption.equal) {
+    constructor(public questLineName: QuestLineNameType, option = AchievementOption.equal) {
         super(1, option, AchievementType.Quest);
     }
 

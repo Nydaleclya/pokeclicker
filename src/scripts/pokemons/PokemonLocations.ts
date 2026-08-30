@@ -599,8 +599,8 @@ class PokemonLocations {
         return cacheLine[pokemonName];
     }
 
-    public static getPokemonSafariItem(pokemonName: PokemonNameType, maxRegion: GameConstants.Region = GameConstants.Region.none): Record<GameConstants.Region, {chance: number, requirement?: string }> {
-        const cache = this.getRegionalCache<Record<GameConstants.Region, {chance: number, requirement?: string }>>(this.getPokemonSafariItem.name);
+    public static getPokemonSafariItem(pokemonName: PokemonNameType, maxRegion: GameConstants.Region = GameConstants.Region.none): Record<GameConstants.Region, {chance: number, requirement?: Requirement }> {
+        const cache = this.getRegionalCache<Record<GameConstants.Region, {chance: number, requirement?: Requirement }>>(this.getPokemonSafariItem.name);
         if (cache[maxRegion]) {
             return cache[maxRegion][pokemonName];
         }
@@ -619,7 +619,7 @@ class PokemonLocations {
                 }
             });
         });
-        return cacheLine[pokemonName] as Record<GameConstants.Region, {chance: number, requirement?: string }>;
+        return cacheLine[pokemonName] as Record<GameConstants.Region, {chance: number, requirement?: Requirement }>;
     }
 
     private static getPokemonRewards(rewardFunction: string) {
