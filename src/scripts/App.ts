@@ -89,11 +89,11 @@ const SafariZones = function (region: GameConstants.Region): string {
         .filter(v => ItemList[v.item.id] instanceof PokemonItem)
         .map(v => PokemonHelper.getPokemonByName(ItemList[v.item.id].name as PokemonNameType))
         .filter(v => v.id != 0)
-        .map(v => PokemonHelper.displayName(v.name)())
+        .map(v => PokemonHelper.displayName(v.name))
         .concat(
             (SafariPokemonList.list[region] as KnockoutObservable<SafariEncounter[]>)()
                 .filter(v => !(v.requirement instanceof ObtainedPokemonRequirement))
-                .map(v => PokemonHelper.displayName(v.name)())
+                .map(v => PokemonHelper.displayName(v.name))
         )
         .join(' <-> ');
 };
@@ -115,14 +115,14 @@ const FarmWanderInfo = function (): string {
     const result: string[][] = [];
     const region = BerryRegionLocked;
 
-    App.game.farming.berryData.forEach(v => !region.flat().includes(v.type) ? region[0].push(v.type) : null);
+    BerryList.forEach(v => !region.flat().includes(v.type) ? region[0].push(v.type) : null);
     region.forEach(() => result.push([]));
 
-    const temp = App.game.farming.berryData.flatMap(v => v.wander.map(w => [w, region.flatMap((a, b) => a.includes(v.type) ? b : -1).filter(i => i >= 0)[0]]));
+    const temp = BerryList.flatMap(v => v.wander.map(w => [w, region.flatMap((a, b) => a.includes(v.type) ? b : -1).filter(i => i >= 0)[0]]));
     [...new Set(temp.map(v => v[0] as PokemonNameType))]
         .map(v => [v, Math.max(Math.min(...temp.map(w => w[0] === v ? w[1] as number : -1).filter(j => j >= 0)), PokemonHelper.calcNativeRegion(v))])
         .sort((a, b) => (a[0] as string).localeCompare(b[0] as string))
-        .forEach(v => result[v[1] as number].push(PokemonHelper.displayName(v[0] as PokemonNameType)()));
+        .forEach(v => result[v[1] as number].push(PokemonHelper.displayName(v[0] as PokemonNameType)));
     const result2: string[] = [];
     result.forEach(v => {
         result2.push(v.join('↔'));
@@ -218,7 +218,7 @@ const RoutesInfo = function (region: GameConstants.Region): string {
             route.routeName,
             route.pokemon.land
                 .concat(route.pokemon.water, route.pokemon.headbutt, ...route.pokemon.special.map(p => (!RemoveEvent(p.req) ? p.pokemon : []) ) )
-                .map(v => PokemonHelper.displayName(v)()),
+                .map(v => PokemonHelper.displayName(v)),
         ]);
     Routes.getRoutesByRegion(region).forEach(v => {
         v.pokemon.special.forEach(w => {
@@ -248,13 +248,13 @@ const DungeonsInfo = function (region: GameConstants.Region): string {
                 .filter(v => !(v instanceof DungeonTrainer))
                 .map(v => v instanceof DungeonBossPokemon ? (!RemoveEvent(v.options?.requirement) ? v.name : []) : v).flat()
                 .map(v => v.hasOwnProperty('options') ? (!RemoveEvent((v as DetailedPokemon).options.requirement) ? (v as DetailedPokemon).pokemon : []) : v).flat()
-                .map(v => PokemonHelper.displayName(v as PokemonNameType)())
+                .map(v => PokemonHelper.displayName(v as PokemonNameType))
                 .concat(
                     dungeonList[k].bossList
                         .filter(v => v instanceof DungeonTrainer)
                         .map(v => (v as DungeonTrainer).team).flat()
                         .filter(v => v.shadow == GameConstants.ShadowStatus.Shadow)
-                        .map(v => PokemonHelper.displayName(v.name)())
+                        .map(v => PokemonHelper.displayName(v.name))
                 ),
             Object.entries(dungeonList[k].lootTable).map(([_, v]) => v).flat()
                 .filter(v => PokemonHelper.getPokemonByName(v.loot as PokemonNameType).id)
@@ -393,8 +393,8 @@ const OrderRequirements = function (req: Requirement, ending: boolean): string {
         }
     } else if ( req instanceof CaughtUniquePokemonByFilterRequirement ) {
         let needed = req.requiredValue;
-        const possiblePokemon = pokemonList
-            .filter(pokemon => req.filter(<PartyPokemon><unknown>pokemon))
+        const possiblePokemon = req.list
+            .map(pokemonName => PokemonHelper.getPokemonByName(pokemonName))
             .map(pokemon => [pokemon.id, pokemon.name, Infinity]);
 
         for ( let k = 0; k < possiblePokemon.length; k++ ) {
@@ -1268,7 +1268,7 @@ const RouteAchieves = function () {
         return;
     }
     if ( testKills && testPokerus && !testHighest ) {
-        MapHelper.moveToRoute(Routes.unnormalizeRoute(Routes.normalizedNumber(myself.region, myself.route, false) + 1), myself.region);
+        MapHelper.moveToRoute(Routes.unnormalizeRoute(Routes.normalizedNumber(myself.region, myself.route) + 1), myself.region);
     }
 
     setTimeout(() => RouteAchieves(), cooldown);
@@ -1317,7 +1317,7 @@ const HighestOneShot = function (): string {
                 DamageCalculator.type2(PokemonHelper.getPokemonByName(w).type2);
                 return DamageCalculator.totalDamage() >= health;
             })
-            .every(Boolean) ? Routes.normalizedNumber(myself.region, v.number, false) : -1);
+            .every(Boolean) ? Routes.normalizedNumber(myself.region, v.number) : -1);
 
     return routes.length > 0 ? Routes.getName(Routes.unnormalizeRoute(Math.max(...routes)), myself.region) : 'No One Shot';
 };
