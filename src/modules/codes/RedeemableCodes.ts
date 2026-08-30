@@ -16,6 +16,7 @@ import GameHelper from '../GameHelper';
 import Amount from '../wallet/Amount';
 import Item from '../items/Item';
 import QuestLineState from '../quests/QuestLineState';
+import Rand from '../utilities/Rand';
 
 export default class RedeemableCodes implements Saveable {
     defaults: Record<string, any>;
@@ -81,16 +82,17 @@ export default class RedeemableCodes implements Saveable {
 
                 return true;
             }),
-            new RedeemableCode('typed-held-item', -2046503095, false, async () => {
+            new RedeemableCode('typed-held-item', -1718195957, false, async () => {
                 // Give the player 3 random typed held items
-                const items = Object.values(ItemList).filter((i) => i.constructor.name === 'TypeRestrictedAttackBonusHeldItem')
-                    .sort(() => 0.5 - Math.random())
-                    .slice(0, 3);
-                items.forEach((i) => i.gain(1));
+                Rand.shuffleArray([
+                    'Black_Belt', 'Black_Glasses', 'Charcoal', 'Dragon_Fang', 'Magnet', 'Metal_Powder',
+                    'Miracle_Seed', 'Mystic_Water', 'Never_Melt_Ice', 'Fairy_Feather', 'Poison_Barb', 'Rock_Incense',
+                    'Sharp_Beak', 'Silk_Scarf', 'Silver_Powder', 'Soft_Sand', 'Spell_Tag', 'Twisted_Spoon',
+                ]).slice(0, 3).forEach(name => ItemList[name].gain(1));
                 // Notify that the code was activated successfully
                 Notifier.notify({
                     title: 'Code activated!',
-                    message: 'You gained 3 random Held Items, that boosts a specific type!',
+                    message: 'You gained 3 random Held Items that each boost a specific type!',
                     type: NotificationConstants.NotificationOption.success,
                     timeout: 1e4,
                 });
