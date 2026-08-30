@@ -15,7 +15,7 @@ export default class LazyRequirementWrapper<T extends Requirement> extends Requi
         return this.unwrap().hint();
     }
 
-    private unwrap(): T {
+    public unwrap(): T {
         if (!this.req) {
             this.req = this.reqCreator();
             this.requiredValue = this.req.requiredValue;

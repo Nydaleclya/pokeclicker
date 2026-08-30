@@ -215,7 +215,7 @@ class Breeding implements Feature {
         let emptySlots = 0;
         while (index-- > 0) {
             const helper = this.hatcheryHelpers.hired()[index];
-            if (helper) {
+            if (helper && false) {
                 continue;
             }
             const egg = this.eggList[index]();
@@ -580,7 +580,7 @@ class Breeding implements Feature {
     public fireAllButtonTooltip(): string {
         let str = '';
         this.hatcheryHelpers.hired().forEach(x => {
-            str += `<img src="assets/images/profile/trainer-${x.trainerSprite}.png" width="20px">&nbsp; ${x.name} <img src="assets/images/currency/${GameConstants.Currency[x.cost.currency]}.svg" width="20px">&nbsp;${(x.cost.amount).toLocaleString('en-US')} <br/>`;
+            str += `<img src="assets/images/profile/trainer-${x.trainerSprite}.png" width="20px">&nbsp; ${x.name} <img src="assets/images/currency/${GameConstants.Currency[x.cost.currency]}.svg" width="20px">&nbsp;${(x.realCost()).toLocaleString('en-US')} <br/>`;
         });
         return str;
     }
