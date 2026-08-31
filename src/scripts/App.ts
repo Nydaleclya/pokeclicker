@@ -382,7 +382,7 @@ const OrderRequirements = function (req: Requirement, ending: boolean): string {
             const dockLocation = GameConstants.DockTowns[req.requiredValue];
             temp += `[N] ${regionText.charAt(0).toUpperCase()}${regionText.slice(1)}`;
             temp += '&&';
-            let reqArray = TownList[dockLocation].requirements.map(v => OrderRequirements(v, true));
+            let reqArray = TownList[dockLocation].requirements.map(v => OrderRequirements(v, false));
             reqArray = reqArray.filter(v => v);
             temp += reqArray.join('&&');
         }
@@ -462,6 +462,7 @@ const OrderRequirements = function (req: Requirement, ending: boolean): string {
     } else if ( req instanceof MultiRequirement ) {
         let reqArray = req.requirements.map(v => OrderRequirements(v, false));
         reqArray = reqArray.filter(v => v);
+        reqArray = reqArray.map(v => v.split('&&').join(' AND '));
         if ( reqArray.length > 1 ) {
             temp += '→';
             temp += reqArray.join(' AND ');
@@ -472,6 +473,7 @@ const OrderRequirements = function (req: Requirement, ending: boolean): string {
     } else if ( req instanceof OneFromManyRequirement ) {
         let reqArray = req.requirements.map(v => OrderRequirements(v, false));
         reqArray = reqArray.filter(v => v);
+        reqArray = reqArray.map(v => v.split('&&').join(' AND '));
         if ( reqArray.length > 1 ) {
             temp += '→';
             temp += reqArray.join(' OR ');
