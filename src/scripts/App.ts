@@ -1271,7 +1271,7 @@ const RouteAchieves = function () {
         return;
     }
     if ( testKills && testPokerus && !testHighest ) {
-        MapHelper.moveToRoute(Routes.unnormalizeRoute(Routes.normalizedNumber(myself.region, myself.route) + 1), myself.region);
+        MapHelper.moveToRoute(Routes.unnormalizeRoute(Math.max(...Routes.regionRoutes.map((v, i) => (v.region == myself.region && v.number == myself.route ? i : -1))) + 2), myself.region);
     }
 
     setTimeout(() => RouteAchieves(), cooldown);
@@ -1320,7 +1320,7 @@ const HighestOneShot = function (): string {
                 DamageCalculator.type2(PokemonHelper.getPokemonByName(w).type2);
                 return DamageCalculator.totalDamage() >= health;
             })
-            .every(Boolean) ? Routes.normalizedNumber(myself.region, v.number) : -1);
+            .every(Boolean) ? Math.max(...Routes.regionRoutes.map((v, i) => (v.region == myself.region && v.number == myself.route ? i : -1))) + 1 : -1);
 
     return routes.length > 0 ? Routes.getName(Routes.unnormalizeRoute(Math.max(...routes)), myself.region) : 'No One Shot';
 };
