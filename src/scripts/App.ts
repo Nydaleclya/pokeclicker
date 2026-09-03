@@ -784,7 +784,7 @@ const PokemonOrder = function (filterID?: number): string[] {
         }
 
         // Safari
-        const safariChance = PokemonLocations.getPokemonSafariChance(pokemonName);
+        const safariChance = PokemonLocations.getPokemonSafariChance(pokemonName) as Record<GameConstants.Region, {requirement?: Requirement, chances: Record<GameConstants.Region, number>}>;
         const safariTowns = safariTownsGlobal();
 
         const safaris: GameConstants.Region[] = Object.keys(safariChance).map(v => Number(v));
@@ -794,8 +794,8 @@ const PokemonOrder = function (filterID?: number): string[] {
                 const pokemonList = SafariPokemonList.list[region]?.() as SafariEncounter[];
                 const town = safariTowns[region] as Town;
                 let reqString = '';
-                if ( pokemonList.filter(encounter => encounter.name === pokemonName)[0].requirement instanceof Requirement ) {
-                    reqString += OrderRequirements(pokemonList.filter(encounter => encounter.name === pokemonName)[0].requirement, true);
+                if ( safariChance[region].requirement instanceof Requirement ) {
+                    reqString += OrderRequirements(safariChance[region].requirement, true);
                 }
                 for ( let i = 0; i < town.requirements.length; i++ ) {
                     reqString += OrderRequirements(town.requirements[i], true);
