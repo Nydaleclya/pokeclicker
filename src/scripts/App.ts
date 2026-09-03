@@ -609,13 +609,21 @@ const TemporaryBattleOrder = function (): string {
     return temp;
 };
 
-const safariTownsGlobal = function (): Partial<Record<GameConstants.Region, Town>> {
+const safariTownsGlobal = function (): Record<GameConstants.Region, Town> {
+    const noSafariTown = TownList['Final Region Town'];
     return {
+        [GameConstants.Region.none]: noSafariTown,
         [GameConstants.Region.kanto]: TownList['Safari Zone'],
         [GameConstants.Region.johto]: TownList['National Park'],
+        [GameConstants.Region.hoenn]: noSafariTown,
         [GameConstants.Region.sinnoh]: TownList['Great Marsh'],
+        [GameConstants.Region.unova]: noSafariTown,
         [GameConstants.Region.kalos]: TownList['Friend Safari'],
         [GameConstants.Region.alola]: TownList['Hoppy Town Fishing Pond'],
+        [GameConstants.Region.galar]: noSafariTown,
+        [GameConstants.Region.hisui]: noSafariTown,
+        [GameConstants.Region.paldea]: noSafariTown,
+        [GameConstants.Region.final]: noSafariTown,
     };
 };
 
@@ -791,8 +799,7 @@ const PokemonOrder = function (filterID?: number): string[] {
         if (safaris.length) {
             for ( let k = 0; k < safaris.length; k++ ) {
                 const region = safaris[k];
-                const pokemonList = SafariPokemonList.list[region]?.() as SafariEncounter[];
-                const town = safariTowns[region] as Town;
+                const town = safariTowns[region];
                 let reqString = '';
                 if ( safariChance[region].requirement instanceof Requirement ) {
                     reqString += OrderRequirements(safariChance[region].requirement, true);
@@ -802,7 +809,7 @@ const PokemonOrder = function (filterID?: number): string[] {
                 }
                 // Require Safari Ticket
                 if ( region == GameConstants.Region.kanto ) {
-                    reqString += 'Key Item: Safari Ticket&&';
+                    reqString += 'Key Item: Safari Ticket';
                 }
                 let reqArray = reqString.split('&&');
                 reqArray = RequirementArrayToDNF(reqArray);
