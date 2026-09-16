@@ -154,11 +154,9 @@ const EvoItems = function (): string {
         }
     });
     pokemonList.forEach(v => {
-        if ( v.hasOwnProperty('heldItem') ) {
-            const heldItem = PokemonHelper.getPokemonByName(v.name).heldItem as BagItem;
-            if ( heldItem.type === ItemType.item ) {
-                heldItems.add(heldItem.id as string);
-            }
+        const heldItem = PokemonHelper.getPokemonByName(v.name).heldItem;
+        if ( heldItem && heldItem.type === ItemType.item ) {
+            heldItems.add(String(heldItem.id));
         }
     });
     underground.forEach(v => {
