@@ -98,22 +98,35 @@ const SafariZones = function (region: GameConstants.Region): string {
         .join(' <-> ');
 };
 
-const BerryRegionLocked = [
-    /*Kanto*/   [],
-    /*Johto*/   [],
-    /*Hoenn*/   [BerryType.Pinkan, BerryType.Kee, BerryType.Maranga, BerryType.Liechi, BerryType.Ganlon, BerryType.Salac, BerryType.Enigma],
-    /*Sinnoh*/  [BerryType.Apicot, BerryType.Lansat, BerryType.Snover],
-    /*Unova*/   [],
-    /*Kalos*/   [],
-    /*Alola*/   [],
-    /*Galar*/   [],
-    /*Hisui*/   [BerryType.Hopo],
-    /*Paldea*/  [],
-];
+const BerryRegionLocked = function (): BerryType[][] {
+    const output: BerryType[][] = new Array(GameConstants.Region.final).fill([]);
+
+    // Questline: Team Rocket's Pinkan Theme Park - Hoenn
+    output[GameConstants.Region.hoenn].push(BerryType.Pinkan);
+    // Questline: Land vs. Water - Hoenn
+    output[GameConstants.Region.hoenn].push(BerryType.Liechi);
+    output[GameConstants.Region.hoenn].push(BerryType.Ganlon);
+    output[GameConstants.Region.hoenn].push(BerryType.Salac);
+    // Berry: Liechi/Ganlon
+    output[GameConstants.Region.hoenn].push(BerryType.Kee);
+    // Berry: Salac
+    output[GameConstants.Region.hoenn].push(BerryType.Maranga);
+    // Possible Berry Requirement: Pinkan
+    output[GameConstants.Region.hoenn].push(BerryType.Enigma);
+    // Questline: A New World - Sinnoh
+    output[GameConstants.Region.sinnoh].push(BerryType.Apicot);
+    output[GameConstants.Region.sinnoh].push(BerryType.Lansat);
+    // Pokemon: Snover - Sinnoh
+    output[GameConstants.Region.sinnoh].push(BerryType.Snover);
+    // Not yet implemented
+    output[GameConstants.Region.hisui].push(BerryType.Hopo);
+
+    return output;
+};
 
 const FarmWanderInfo = function (): string {
     const result: string[][] = [];
-    const region = BerryRegionLocked;
+    const region = BerryRegionLocked();
 
     BerryList.forEach(v => !region.flat().includes(v.type) ? region[0].push(v.type) : null);
     region.forEach(() => result.push([]));
@@ -610,18 +623,18 @@ const TemporaryBattleOrder = function (): string {
 const safariTownsGlobal = function (): Record<GameConstants.Region, Town> {
     const noSafariTown = TownList['Final Region Town'];
     return {
-        [GameConstants.Region.none]: noSafariTown,
-        [GameConstants.Region.kanto]: TownList['Safari Zone'],
-        [GameConstants.Region.johto]: TownList['National Park'],
-        [GameConstants.Region.hoenn]: noSafariTown,
-        [GameConstants.Region.sinnoh]: TownList['Great Marsh'],
-        [GameConstants.Region.unova]: noSafariTown,
-        [GameConstants.Region.kalos]: TownList['Friend Safari'],
-        [GameConstants.Region.alola]: TownList['Hoppy Town Fishing Pond'],
-        [GameConstants.Region.galar]: noSafariTown,
-        [GameConstants.Region.hisui]: noSafariTown,
-        [GameConstants.Region.paldea]: noSafariTown,
-        [GameConstants.Region.final]: noSafariTown,
+        [GameConstants.Region.none]:    noSafariTown,
+        [GameConstants.Region.kanto]:   TownList['Safari Zone'],
+        [GameConstants.Region.johto]:   TownList['National Park'],
+        [GameConstants.Region.hoenn]:   noSafariTown,
+        [GameConstants.Region.sinnoh]:  TownList['Great Marsh'],
+        [GameConstants.Region.unova]:   noSafariTown,
+        [GameConstants.Region.kalos]:   TownList['Friend Safari'],
+        [GameConstants.Region.alola]:   TownList['Hoppy Town Fishing Pond'],
+        [GameConstants.Region.galar]:   noSafariTown,
+        [GameConstants.Region.hisui]:   noSafariTown,
+        [GameConstants.Region.paldea]:  noSafariTown,
+        [GameConstants.Region.final]:   noSafariTown,
     };
 };
 
@@ -854,7 +867,7 @@ const PokemonOrder = function (filterID?: number): string[] {
                 const newWandering = <Array<keyof typeof BerryType>>wandering;
                 let region = Infinity;
                 for ( let i = 0; i < newWandering.length; i++ ) {
-                    const temp = BerryRegionLocked.map((arr, k) => arr.includes(BerryType[newWandering[i]]) ? k : -1).filter(v => v > -1);
+                    const temp = BerryRegionLocked().map((arr, k) => arr.includes(BerryType[newWandering[i]]) ? k : -1).filter(v => v > -1);
                     if ( temp.length == 0 ) {
                         temp.push(0);
                     }
