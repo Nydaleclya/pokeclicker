@@ -21,7 +21,7 @@ export default class LogBook implements Feature {
     newLog(type: LogBookType, content: LogContent) {
         if (this.canLog(type)) {
             const length = this.logs.unshift(new LogBookLog(type, content));
-            if (length > 1000) {
+            if (length > 10000) {
                 this.logs.pop();
             }
         }
