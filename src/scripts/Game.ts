@@ -446,6 +446,9 @@ class Game implements TmpGameType {
                 Game.lastLogDate = new Date(logs[i - temp].date).getTime();
             }
         }
+        while ( App.game.logbook.logs().length > 10000 ) {
+            App.game.logbook.logs().pop();
+        }
     }
 
     gameTick() {
