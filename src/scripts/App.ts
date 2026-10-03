@@ -99,7 +99,7 @@ const SafariZones = function (region: GameConstants.Region): string {
 };
 
 const BerryRegionLocked = function (): BerryType[][] {
-    const output: BerryType[][] = new Array(GameConstants.Region.final).fill([]);
+    const output: BerryType[][] = new Array(GameConstants.Region.final + 1).fill([]);
 
     // Questline: Team Rocket's Pinkan Theme Park - Hoenn
     output[GameConstants.Region.hoenn].push(BerryType.Pinkan);
@@ -119,17 +119,16 @@ const BerryRegionLocked = function (): BerryType[][] {
     // Pokemon: Snover - Sinnoh
     output[GameConstants.Region.sinnoh].push(BerryType.Snover);
     // Not yet implemented
-    output[GameConstants.Region.hisui].push(BerryType.Hopo);
+    output[GameConstants.Region.final].push(BerryType.Hopo);
 
     return output;
 };
 
 const FarmWanderInfo = function (): string {
-    const result: string[][] = [];
+    const result: string[][] = new Array(GameConstants.Region.final + 1).fill([]);
     const region = BerryRegionLocked();
 
     BerryList.forEach(v => !region.flat().includes(v.type) ? region[0].push(v.type) : null);
-    region.forEach(() => result.push([]));
 
     const temp = BerryList.flatMap(v => v.wander.map(w => [w, region.flatMap((a, b) => a.includes(v.type) ? b : -1).filter(i => i >= 0)[0]]));
     [...new Set(temp.map(v => v[0] as PokemonNameType))]
