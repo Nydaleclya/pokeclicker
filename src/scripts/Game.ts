@@ -442,7 +442,7 @@ class Game implements TmpGameType {
                 while ( logs[i - temp].type.label != 'ESCAPED' && logs[i - temp].type.label != 'CAUGHT' && temp < i ) {
                     temp++;
                 }
-                console.log(`%c ${place} - ${logs[i - temp].description()} - ${new Date(logs[i - temp].date).toLocaleString()}`, `color:${color}`);
+                console.log(`%c ${place} - ${logs[i - temp].description()} - ${new Date(logs[i - temp].date).toLocaleString('de-DE')}`, `color:${color}`);
                 Game.lastLogDate = new Date(logs[i - temp].date).getTime();
             }
         }
