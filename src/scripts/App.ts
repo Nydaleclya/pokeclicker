@@ -74,6 +74,14 @@ class App {
 App satisfies TmpAppType;
 
 // Personal Functions
+const FullPokemonList = function (): string {
+    Settings.setSettingByName('translation.language', 'de');
+    const out = pokemonList.filter(p => p.id > 0).map(p => [p.id, p.name, PokemonHelper.displayName(p.name)].join(';')).join('\n');
+    Settings.setSettingByName('translation.language', 'en');
+
+    return out;
+};
+
 const MissingMonoTypes = function (type: PokemonType): PokemonNameType[] {
     const myself = player as Player;
     return pokemonList.filter(p =>
